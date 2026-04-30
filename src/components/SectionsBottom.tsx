@@ -1,6 +1,8 @@
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
+import { BLOG_POSTS } from "@/data/blogPosts";
 
 const SPECIALISTS = [
   { name: "Елена Михайлова", role: "Психотерапевт, КПТ", exp: "14 лет опыта", emoji: "👩‍⚕️" },
@@ -30,11 +32,7 @@ const REVIEWS = [
   },
 ];
 
-const BLOG_POSTS = [
-  { tag: "Психология", title: "Как распознать эмоциональное выгорание и что с ним делать", date: "18 апреля 2026" },
-  { tag: "Практики", title: "5 дыхательных упражнений для снижения тревоги прямо сейчас", date: "10 апреля 2026" },
-  { tag: "Семья", title: "Созависимость: как выйти из токсичных отношений с любовью", date: "2 апреля 2026" },
-];
+
 
 interface SectionsBottomProps {
   onBooking: () => void;
@@ -105,24 +103,26 @@ export default function SectionsBottom({ onBooking }: SectionsBottomProps) {
               <p className="font-body text-sage text-sm uppercase tracking-[0.2em] mb-3">Блог</p>
               <h2 className="font-display text-4xl md:text-5xl text-deep-slate leading-tight">Статьи и советы</h2>
             </div>
-            <Button variant="ghost" className="hidden md:flex text-sage hover:text-sage/80 font-body text-sm gap-1">
-              Все статьи <Icon name="ArrowRight" size={14} />
-            </Button>
+            <Link to="/blog">
+              <Button variant="ghost" className="hidden md:flex text-sage hover:text-sage/80 font-body text-sm gap-1">
+                Все статьи <Icon name="ArrowRight" size={14} />
+              </Button>
+            </Link>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {BLOG_POSTS.map((post) => (
-              <div key={post.title} className="bg-white rounded-2xl overflow-hidden border border-border card-hover cursor-pointer">
+              <Link key={post.id} to={`/blog/${post.id}`} className="group bg-white rounded-2xl overflow-hidden border border-border card-hover cursor-pointer block">
                 <div className="h-40 bg-sage-light flex items-center justify-center">
-                  <Icon name="BookOpen" size={40} className="text-sage opacity-50" />
+                  <Icon name="BookOpen" size={40} className="text-sage opacity-50 group-hover:opacity-70 transition-opacity" />
                 </div>
                 <div className="p-6">
                   <span className="inline-block font-body text-xs uppercase tracking-wider text-sage bg-sage-light rounded-full px-3 py-1 mb-3">
                     {post.tag}
                   </span>
-                  <h3 className="font-display text-xl text-deep-slate leading-snug mb-3">{post.title}</h3>
+                  <h3 className="font-display text-xl text-deep-slate leading-snug mb-3 group-hover:text-sage transition-colors">{post.title}</h3>
                   <p className="font-body text-xs text-muted-foreground">{post.date}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

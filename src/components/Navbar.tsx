@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import FlowerOfLife from "@/components/FlowerOfLife";
@@ -19,8 +20,14 @@ interface NavbarProps {
 
 export default function Navbar({ onBooking }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHome = location.pathname === "/";
 
   const scrollTo = (href: string) => {
+    if (!isHome) {
+      window.location.href = "/" + href;
+      return;
+    }
     const el = document.querySelector(href);
     if (el) el.scrollIntoView({ behavior: "smooth" });
     setMobileMenuOpen(false);
@@ -29,10 +36,10 @@ export default function Navbar({ onBooking }: NavbarProps) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
       <div className="container-max flex items-center justify-between h-16 px-6">
-        <a href="#" className="flex items-center gap-2 font-display text-xl font-medium text-deep-slate tracking-wide">
+        <Link to="/" className="flex items-center gap-2 font-display text-xl font-medium text-deep-slate tracking-wide">
           <FlowerOfLife size={28} />
           Осознанный <span className="text-sage">МИР</span>
-        </a>
+        </Link>
         <nav className="hidden md:flex items-center gap-6">
           {NAV_LINKS.map(link => (
             <button
@@ -43,6 +50,12 @@ export default function Navbar({ onBooking }: NavbarProps) {
               {link.label}
             </button>
           ))}
+          <Link
+            to="/blog"
+            className={`nav-link font-body text-sm transition-colors ${location.pathname.startsWith("/blog") ? "text-sage" : "text-muted-foreground hover:text-deep-slate"}`}
+          >
+            Блог
+          </Link>
         </nav>
         <div className="flex items-center gap-3">
           <Button
@@ -70,6 +83,13 @@ export default function Navbar({ onBooking }: NavbarProps) {
               {link.label}
             </button>
           ))}
+          <Link
+            to="/blog"
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-left font-body text-sm text-deep-slate py-1"
+          >
+            Блог
+          </Link>
           <Button
             onClick={() => { onBooking(); setMobileMenuOpen(false); }}
             className="bg-sage text-primary-foreground hover:opacity-90 font-body text-sm w-full"
