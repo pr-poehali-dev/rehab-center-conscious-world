@@ -46,8 +46,22 @@ export default function BookingModal({ open, onClose }: BookingModalProps) {
   };
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const BOOKING_URL = "https://functions.poehali.dev/2ac9824b-875a-44f4-9c2f-f7e158c394b7";
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await fetch(BOOKING_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: form.name,
+        phone: form.phone,
+        city: form.city,
+        service: form.service,
+        date: form.date,
+        comment: form.comment,
+      }),
+    });
     setSent(true);
   };
 
