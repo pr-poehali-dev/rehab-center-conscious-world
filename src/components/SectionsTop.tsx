@@ -46,6 +46,12 @@ export default function SectionsTop({ onBooking, scrollTo }: SectionsTopProps) {
     <>
       {/* HERO */}
       <section className="relative min-h-screen flex items-center overflow-hidden hero-gradient pt-16">
+        <div className="absolute inset-0 pointer-events-none" style={{
+          backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='104' viewBox='0 0 120 104'%3E%3Cg fill='none' stroke='%23a0855a' stroke-width='1'%3E%3Ccircle cx='60' cy='52' r='24'/%3E%3Ccircle cx='84' cy='52' r='24'/%3E%3Ccircle cx='36' cy='52' r='24'/%3E%3Ccircle cx='72' cy='31' r='24'/%3E%3Ccircle cx='48' cy='31' r='24'/%3E%3Ccircle cx='72' cy='73' r='24'/%3E%3Ccircle cx='48' cy='73' r='24'/%3E%3Ccircle cx='60' cy='52' r='48'/%3E%3C/g%3E%3C/svg%3E\")",
+          backgroundSize: "120px 104px",
+          backgroundRepeat: "repeat",
+          opacity: 0.07,
+        }} />
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 right-0 w-1/2 h-full">
             <img
