@@ -2,6 +2,7 @@ import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 
 const HERO_IMAGE = "https://cdn.poehali.dev/projects/184f0e0d-a684-434f-8d45-5000ddbe56df/files/d152e661-1e44-4189-8c8d-fcf36b52b105.jpg";
+const ABOUT_IMAGE = "https://cdn.poehali.dev/projects/184f0e0d-a684-434f-8d45-5000ddbe56df/files/49310e31-d9fe-48b0-a186-15f67e0156ff.jpg";
 
 const SERVICES = [
   { icon: "Brain", title: "Психотерапия", desc: "Индивидуальная работа с опытным психотерапевтом. Проработка травм, тревоги, депрессии." },
@@ -141,7 +142,7 @@ export default function SectionsTop({ onBooking, scrollTo }: SectionsTopProps) {
             </div>
             <div className="relative">
               <div className="aspect-[4/5] rounded-3xl overflow-hidden">
-                <img src={HERO_IMAGE} alt="Центр" className="w-full h-full object-cover" />
+                <img src={ABOUT_IMAGE} alt="Центр" className="w-full h-full object-cover" />
               </div>
               <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-6 shadow-lg border border-border max-w-xs">
                 <p className="font-display text-4xl text-sage font-medium">98%</p>
