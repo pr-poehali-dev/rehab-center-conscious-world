@@ -1,4 +1,5 @@
 {
+  "get-bookings": "https://functions.poehali.dev/321ab120-4da2-4b36-a74f-f3637f96ab3e",
   "create-booking": "https://functions.poehali.dev/2ac9824b-875a-44f4-9c2f-f7e158c394b7",
   "tinkoff-webhook": "https://functions.poehali.dev/fe9a91bb-75f3-48c1-8630-24fea6ff9a90",
   "tinkoff-payment": "https://functions.poehali.dev/50d0dabc-5bae-47b4-9cf2-bf92e66bf24e"
