@@ -3,13 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { BLOG_POSTS } from "@/data/blogPosts";
-
-const SPECIALISTS = [
-  { name: "Елена Михайлова", role: "Психотерапевт, КПТ", exp: "14 лет опыта", emoji: "👩‍⚕️" },
-  { name: "Андрей Соколов", role: "Нарколог-психиатр", exp: "18 лет опыта", emoji: "👨‍⚕️" },
-  { name: "Ольга Петрова", role: "Гештальт-терапевт", exp: "11 лет опыта", emoji: "👩‍💼" },
-  { name: "Дмитрий Лебедев", role: "Семейный психолог", exp: "9 лет опыта", emoji: "👨‍💼" },
-];
+import { SPECIALISTS } from "@/data/specialists";
 
 const REVIEWS = [
   {
@@ -44,26 +38,39 @@ export default function SectionsBottom({ onBooking }: SectionsBottomProps) {
       {/* SPECIALISTS */}
       <section id="specialists" className="section-padding bg-warm-cream flower-of-life-bg">
         <div className="container-max">
-          <div className="text-center mb-14">
-            <p className="font-body text-sage text-sm uppercase tracking-[0.2em] mb-3">Команда</p>
-            <h2 className="font-display text-4xl md:text-5xl text-deep-slate leading-tight">Наши специалисты</h2>
+          <div className="flex items-end justify-between mb-14">
+            <div className="text-center md:text-left">
+              <p className="font-body text-sage text-sm uppercase tracking-[0.2em] mb-3">Команда</p>
+              <h2 className="font-display text-4xl md:text-5xl text-deep-slate leading-tight">Наши специалисты</h2>
+            </div>
+            <Link to="/specialists" className="hidden md:block">
+              <Button variant="ghost" className="text-sage hover:text-sage/80 font-body text-sm gap-1">
+                Все специалисты <Icon name="ArrowRight" size={14} />
+              </Button>
+            </Link>
           </div>
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
-            {SPECIALISTS.map((sp) => (
-              <div key={sp.name} className="bg-white rounded-2xl p-6 text-center card-hover border border-border">
-                <div className="text-5xl mb-4">{sp.emoji}</div>
-                <h3 className="font-display text-xl text-deep-slate mb-1">{sp.name}</h3>
-                <p className="font-body text-sm text-sage mb-1">{sp.role}</p>
-                <p className="font-body text-xs text-muted-foreground">{sp.exp}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onBooking}
-                  className="mt-4 border-sage text-sage hover:bg-sage-light font-body text-xs w-full rounded-xl"
-                >
-                  Записаться
-                </Button>
-              </div>
+            {[...SPECIALISTS].sort((a,b) => b.rating - a.rating).map((sp) => (
+              <Link key={sp.id} to={`/specialists/${sp.id}`} className="group bg-white rounded-2xl overflow-hidden border border-border card-hover flex flex-col">
+                <img src={sp.photo} alt={sp.name} className="w-full h-44 object-cover object-top" />
+                <div className="p-5 flex flex-col flex-1">
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className="text-amber-400 text-xs">★</span>
+                    <span className="font-body text-xs text-muted-foreground">{sp.rating}</span>
+                  </div>
+                  <h3 className="font-display text-lg text-deep-slate mb-0.5 group-hover:text-sage transition-colors">{sp.name}</h3>
+                  <p className="font-body text-xs text-sage mb-1">{sp.role}</p>
+                  <p className="font-body text-xs text-muted-foreground mb-4">{sp.exp}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => { e.preventDefault(); onBooking(); }}
+                    className="mt-auto border-sage text-sage hover:bg-sage-light font-body text-xs w-full rounded-xl"
+                  >
+                    Записаться
+                  </Button>
+                </div>
+              </Link>
             ))}
           </div>
         </div>

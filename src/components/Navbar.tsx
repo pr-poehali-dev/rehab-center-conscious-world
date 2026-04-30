@@ -8,9 +8,7 @@ const NAV_LINKS = [
   { label: "О центре", href: "#about" },
   { label: "Услуги", href: "#services" },
   { label: "Программы", href: "#programs" },
-  { label: "Специалисты", href: "#specialists" },
   { label: "Отзывы", href: "#reviews" },
-  { label: "Блог", href: "#blog" },
   { label: "Контакты", href: "#contacts" },
 ];
 
@@ -51,6 +49,12 @@ export default function Navbar({ onBooking }: NavbarProps) {
             </button>
           ))}
           <Link
+            to="/specialists"
+            className={`nav-link font-body text-sm transition-colors ${location.pathname.startsWith("/specialists") ? "text-sage" : "text-muted-foreground hover:text-deep-slate"}`}
+          >
+            Специалисты
+          </Link>
+          <Link
             to="/blog"
             className={`nav-link font-body text-sm transition-colors ${location.pathname.startsWith("/blog") ? "text-sage" : "text-muted-foreground hover:text-deep-slate"}`}
           >
@@ -83,6 +87,13 @@ export default function Navbar({ onBooking }: NavbarProps) {
               {link.label}
             </button>
           ))}
+          <Link
+            to="/specialists"
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-left font-body text-sm text-deep-slate py-1"
+          >
+            Специалисты
+          </Link>
           <Link
             to="/blog"
             onClick={() => setMobileMenuOpen(false)}
