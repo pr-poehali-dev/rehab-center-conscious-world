@@ -4,10 +4,13 @@ import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import FlowerOfLife from "@/components/FlowerOfLife";
 
-const NAV_LINKS = [
+const NAV_LINKS_BEFORE = [
   { label: "О центре", href: "#about" },
   { label: "Услуги", href: "#services" },
   { label: "Программы", href: "#programs" },
+];
+
+const NAV_LINKS_AFTER = [
   { label: "Отзывы", href: "#reviews" },
   { label: "Контакты", href: "#contacts" },
 ];
@@ -39,7 +42,7 @@ export default function Navbar({ onBooking }: NavbarProps) {
           Осознанный <span className="text-sage">МИР</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6">
-          {NAV_LINKS.map(link => (
+          {NAV_LINKS_BEFORE.map(link => (
             <button
               key={link.href}
               onClick={() => scrollTo(link.href)}
@@ -60,6 +63,15 @@ export default function Navbar({ onBooking }: NavbarProps) {
           >
             Блог
           </Link>
+          {NAV_LINKS_AFTER.map(link => (
+            <button
+              key={link.href}
+              onClick={() => scrollTo(link.href)}
+              className="nav-link font-body text-sm text-muted-foreground hover:text-deep-slate transition-colors"
+            >
+              {link.label}
+            </button>
+          ))}
         </nav>
         <div className="flex items-center gap-3">
           <Button
@@ -78,7 +90,7 @@ export default function Navbar({ onBooking }: NavbarProps) {
       </div>
       {mobileMenuOpen && (
         <div className="md:hidden bg-background/95 backdrop-blur-md border-t border-border px-6 py-4 flex flex-col gap-4 animate-fade-in">
-          {NAV_LINKS.map(link => (
+          {NAV_LINKS_BEFORE.map(link => (
             <button
               key={link.href}
               onClick={() => scrollTo(link.href)}
@@ -101,6 +113,15 @@ export default function Navbar({ onBooking }: NavbarProps) {
           >
             Блог
           </Link>
+          {NAV_LINKS_AFTER.map(link => (
+            <button
+              key={link.href}
+              onClick={() => scrollTo(link.href)}
+              className="text-left font-body text-sm text-deep-slate py-1"
+            >
+              {link.label}
+            </button>
+          ))}
           <Button
             onClick={() => { onBooking(); setMobileMenuOpen(false); }}
             className="bg-sage text-primary-foreground hover:opacity-90 font-body text-sm w-full"
