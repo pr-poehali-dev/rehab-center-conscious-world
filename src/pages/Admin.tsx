@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Icon from "@/components/ui/icon";
 
 const GET_BOOKINGS_URL = "https://functions.poehali.dev/321ab120-4da2-4b36-a74f-f3637f96ab3e";
+const ADMIN_PASSWORD = "osoznanie2024";
+const SESSION_KEY = "admin_auth";
 
 interface Booking {
   id: number;
@@ -16,6 +20,27 @@ interface Booking {
 }
 
 export default function Admin() {
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem(SESSION_KEY) === "1");
+  const [password, setPassword] = useState("");
+  const [pwError, setPwError] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem(SESSION_KEY, "1");
+      setAuthed(true);
+      setPwError(false);
+    } else {
+      setPwError(true);
+      setPassword("");
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    setAuthed(false);
+  };
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -33,7 +58,44 @@ export default function Admin() {
     }
   };
 
-  useEffect(() => { fetchBookings(); }, []);
+  useEffect(() => { if (authed) fetchBookings(); }, [authed]);
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 rounded-full bg-sage-light flex items-center justify-center mx-auto mb-4">
+              <Icon name="Leaf" size={24} className="text-sage" />
+            </div>
+            <h1 className="font-display text-2xl text-deep-slate">Осознанный МИР</h1>
+            <p className="font-body text-sm text-muted-foreground mt-1">Вход в панель администратора</p>
+          </div>
+          <form onSubmit={handleLogin} className="bg-white rounded-2xl border border-border p-6 space-y-4">
+            <div>
+              <Label className="font-body text-sm text-deep-slate">Пароль</Label>
+              <Input
+                type="password"
+                className="mt-1 border-warm-tan focus:border-sage"
+                placeholder="Введите пароль"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setPwError(false); }}
+                autoFocus
+                required
+              />
+              {pwError && (
+                <p className="mt-1.5 text-xs text-destructive font-body">Неверный пароль. Попробуйте ещё раз.</p>
+              )}
+            </div>
+            <Button type="submit" className="w-full bg-sage text-primary-foreground hover:opacity-90 font-body">
+              <Icon name="LogIn" size={16} className="mr-2" />
+              Войти
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   const filtered = bookings.filter(b =>
     [b.name, b.phone, b.city, b.service].some(f =>
@@ -54,15 +116,26 @@ export default function Admin() {
             <p className="font-body text-xs text-muted-foreground">Панель администратора</p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchBookings}
-          className="font-body border-warm-tan text-deep-slate gap-2"
-        >
-          <Icon name="RefreshCw" size={14} />
-          Обновить
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchBookings}
+            className="font-body border-warm-tan text-deep-slate gap-2"
+          >
+            <Icon name="RefreshCw" size={14} />
+            Обновить
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="font-body text-muted-foreground gap-2 hover:text-destructive"
+          >
+            <Icon name="LogOut" size={14} />
+            Выйти
+          </Button>
+        </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
