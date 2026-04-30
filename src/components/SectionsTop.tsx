@@ -1,7 +1,7 @@
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 
-const HERO_IMAGE = "https://cdn.poehali.dev/projects/184f0e0d-a684-434f-8d45-5000ddbe56df/files/24adc93f-5089-4035-9898-6d7a14a440e8.jpg";
+const HERO_IMAGE = "https://cdn.poehali.dev/projects/184f0e0d-a684-434f-8d45-5000ddbe56df/files/d152e661-1e44-4189-8c8d-fcf36b52b105.jpg";
 
 const SERVICES = [
   { icon: "Brain", title: "Психотерапия", desc: "Индивидуальная работа с опытным психотерапевтом. Проработка травм, тревоги, депрессии." },
