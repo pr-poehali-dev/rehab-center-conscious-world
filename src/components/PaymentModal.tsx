@@ -13,22 +13,31 @@ export interface PaymentItem {
   description?: string;
 }
 
+type PaymentMethod = "card" | "sbp" | "mir";
+type Step = "form" | "loading" | "error";
+
+const METHODS: { id: PaymentMethod; label: string; icon: string; badge?: string }[] = [
+  { id: "card", label: "Банковская карта", icon: "CreditCard" },
+  { id: "sbp", label: "СБП", icon: "Zap", badge: "Быстро" },
+  { id: "mir", label: "МИР Pay", icon: "Smartphone" },
+];
+
 interface PaymentModalProps {
   open: boolean;
   onClose: () => void;
   item: PaymentItem | null;
 }
 
-type Step = "form" | "loading" | "error";
-
 export default function PaymentModal({ open, onClose, item }: PaymentModalProps) {
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
+  const [method, setMethod] = useState<PaymentMethod>("card");
   const [step, setStep] = useState<Step>("form");
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleClose = () => {
     setStep("form");
     setErrorMsg("");
+    setMethod("card");
     setForm({ name: "", phone: "", email: "" });
     onClose();
   };
@@ -48,6 +57,7 @@ export default function PaymentModal({ open, onClose, item }: PaymentModalProps)
           customerName: form.name,
           customerPhone: form.phone,
           customerEmail: form.email,
+          paymentMethod: method,
         }),
       });
       const data = await res.json();
@@ -75,12 +85,12 @@ export default function PaymentModal({ open, onClose, item }: PaymentModalProps)
         </DialogHeader>
 
         {/* Карточка услуги */}
-        <div className="bg-sage-light rounded-xl p-4 flex items-center justify-between mb-2">
+        <div className="bg-sage-light rounded-xl p-4 flex items-center justify-between">
           <div>
-            <p className="font-body text-sm text-muted-foreground mb-0.5">Вы оплачиваете</p>
+            <p className="font-body text-xs text-muted-foreground mb-0.5 uppercase tracking-wider">Вы оплачиваете</p>
             <p className="font-display text-xl text-deep-slate">{item.name}</p>
             {item.description && (
-              <p className="font-body text-xs text-muted-foreground mt-1">{item.description}</p>
+              <p className="font-body text-xs text-muted-foreground mt-0.5">{item.description}</p>
             )}
           </div>
           <p className="font-display text-2xl text-sage font-medium whitespace-nowrap ml-4">
@@ -90,6 +100,35 @@ export default function PaymentModal({ open, onClose, item }: PaymentModalProps)
 
         {step === "form" && (
           <form onSubmit={handlePay} className="space-y-4 pt-1">
+
+            {/* Выбор способа оплаты */}
+            <div>
+              <Label className="font-body text-sm text-deep-slate mb-2 block">Способ оплаты</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {METHODS.map(m => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setMethod(m.id)}
+                    className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all font-body text-xs
+                      ${method === m.id
+                        ? "border-sage bg-sage-light text-sage"
+                        : "border-border bg-white text-muted-foreground hover:border-sage/40"
+                      }`}
+                  >
+                    {m.badge && (
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-sage text-primary-foreground text-[9px] px-1.5 py-0.5 rounded-full font-body leading-none">
+                        {m.badge}
+                      </span>
+                    )}
+                    <Icon name={m.icon} size={18} />
+                    <span>{m.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Поля формы */}
             <div>
               <Label className="font-body text-sm text-deep-slate">Ваше имя</Label>
               <Input
@@ -112,7 +151,7 @@ export default function PaymentModal({ open, onClose, item }: PaymentModalProps)
             </div>
             <div>
               <Label className="font-body text-sm text-deep-slate">
-                Email <span className="text-muted-foreground">(для чека)</span>
+                Email <span className="text-muted-foreground font-body text-xs">(для чека)</span>
               </Label>
               <Input
                 type="email"
@@ -122,13 +161,17 @@ export default function PaymentModal({ open, onClose, item }: PaymentModalProps)
                 onChange={e => setForm({ ...form, email: e.target.value })}
               />
             </div>
+
             <Button
               type="submit"
               className="w-full bg-sage text-primary-foreground hover:opacity-90 font-body py-5 text-base rounded-xl"
             >
               <Icon name="CreditCard" size={18} className="mr-2" />
-              Перейти к оплате
+              {method === "sbp" && "Оплатить через СБП"}
+              {method === "mir" && "Оплатить через МИР Pay"}
+              {method === "card" && "Перейти к оплате"}
             </Button>
+
             <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground font-body">
               <Icon name="Lock" size={13} />
               <span>Безопасная оплата через Тинькофф</span>
@@ -139,7 +182,11 @@ export default function PaymentModal({ open, onClose, item }: PaymentModalProps)
         {step === "loading" && (
           <div className="text-center py-10">
             <div className="w-12 h-12 rounded-full border-2 border-sage border-t-transparent animate-spin mx-auto mb-4" />
-            <p className="font-body text-muted-foreground">Создаём платёж...</p>
+            <p className="font-body text-muted-foreground">
+              {method === "sbp" && "Подготавливаем QR-код СБП..."}
+              {method === "mir" && "Открываем МИР Pay..."}
+              {method === "card" && "Создаём платёж..."}
+            </p>
           </div>
         )}
 

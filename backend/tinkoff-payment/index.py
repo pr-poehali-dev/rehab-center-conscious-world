@@ -3,9 +3,15 @@ import hashlib
 import os
 import uuid
 import urllib.request
-import urllib.parse
 
 TINKOFF_API = "https://securepay.tinkoff.ru/v2"
+
+# Маппинг метода оплаты на Route для Тинькофф
+PAYMENT_ROUTES = {
+    "sbp": "FASTER_PAYMENT",   # СБП
+    "mir": "MIR_PAY",          # МИР Pay
+    "card": None,              # Обычная карта — без ограничений
+}
 
 
 def generate_token(params: dict, secret_key: str) -> str:
@@ -26,7 +32,7 @@ def tinkoff_request(method: str, payload: dict) -> dict:
 
 
 def handler(event: dict, context) -> dict:
-    """Создание платежа через Тинькофф Эквайринг (демо-режим с ключом TinkoffBankTest)"""
+    """Создание платежа через Тинькофф Эквайринг. Поддерживаются методы: card, sbp, mir"""
     cors_headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -45,6 +51,7 @@ def handler(event: dict, context) -> dict:
     customer_name = body.get("customerName", "")
     customer_email = body.get("customerEmail", "")
     customer_phone = body.get("customerPhone", "")
+    payment_method = body.get("paymentMethod", "card")  # card | sbp | mir
 
     if amount_rub <= 0:
         return {"statusCode": 400, "headers": cors_headers, "body": json.dumps({"error": "Некорректная сумма"})}
@@ -65,6 +72,11 @@ def handler(event: dict, context) -> dict:
             "Phone": customer_phone,
         },
     }
+
+    # Указываем метод оплаты через Route
+    route = PAYMENT_ROUTES.get(payment_method)
+    if route:
+        payload["Route"] = route
 
     if customer_email:
         payload["DATA"]["Email"] = customer_email
