@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Icon from "@/components/ui/icon";
+import FlowerOfLife from "@/components/FlowerOfLife";
 
 const GET_BOOKINGS_URL = "https://functions.poehali.dev/321ab120-4da2-4b36-a74f-f3637f96ab3e";
 const ADMIN_PASSWORD = "osoznanie2024";
@@ -65,8 +66,8 @@ export default function Admin() {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-full bg-sage-light flex items-center justify-center mx-auto mb-4">
-              <Icon name="Leaf" size={24} className="text-sage" />
+            <div className="flex justify-center mb-4">
+              <FlowerOfLife size={52} />
             </div>
             <h1 className="font-display text-2xl text-deep-slate">Осознанный МИР</h1>
             <p className="font-body text-sm text-muted-foreground mt-1">Вход в панель администратора</p>
@@ -108,9 +109,7 @@ export default function Admin() {
       {/* Шапка */}
       <header className="bg-white border-b border-border px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-sage-light flex items-center justify-center">
-            <Icon name="Leaf" size={16} className="text-sage" />
-          </div>
+          <FlowerOfLife size={32} />
           <div>
             <p className="font-display text-lg text-deep-slate leading-tight">Осознанный МИР</p>
             <p className="font-body text-xs text-muted-foreground">Панель администратора</p>

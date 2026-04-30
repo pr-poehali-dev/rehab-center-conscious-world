@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
+import FlowerOfLife from "@/components/FlowerOfLife";
 
 const NAV_LINKS = [
   { label: "О центре", href: "#about" },
@@ -28,7 +29,8 @@ export default function Navbar({ onBooking }: NavbarProps) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
       <div className="container-max flex items-center justify-between h-16 px-6">
-        <a href="#" className="font-display text-xl font-medium text-deep-slate tracking-wide">
+        <a href="#" className="flex items-center gap-2 font-display text-xl font-medium text-deep-slate tracking-wide">
+          <FlowerOfLife size={28} />
           Осознанный <span className="text-sage">МИР</span>
         </a>
         <nav className="hidden md:flex items-center gap-6">
