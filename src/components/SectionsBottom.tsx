@@ -44,7 +44,7 @@ export default function SectionsBottom({ onBooking }: SectionsBottomProps) {
   return (
     <>
       {/* SPECIALISTS */}
-      <section id="specialists" className="section-padding bg-warm-cream">
+      <section id="specialists" className="section-padding bg-warm-cream flower-of-life-bg">
         <div className="container-max">
           <div className="text-center mb-14">
             <p className="font-body text-sage text-sm uppercase tracking-[0.2em] mb-3">Команда</p>
@@ -72,7 +72,7 @@ export default function SectionsBottom({ onBooking }: SectionsBottomProps) {
       </section>
 
       {/* REVIEWS */}
-      <section id="reviews" className="section-padding bg-white">
+      <section id="reviews" className="section-padding bg-white flower-of-life-bg">
         <div className="container-max">
           <div className="text-center mb-14">
             <p className="font-body text-sage text-sm uppercase tracking-[0.2em] mb-3">Отзывы</p>
@@ -98,7 +98,7 @@ export default function SectionsBottom({ onBooking }: SectionsBottomProps) {
       </section>
 
       {/* BLOG */}
-      <section id="blog" className="section-padding bg-warm-cream">
+      <section id="blog" className="section-padding bg-warm-cream flower-of-life-bg">
         <div className="container-max">
           <div className="flex items-end justify-between mb-14">
             <div>
@@ -129,7 +129,7 @@ export default function SectionsBottom({ onBooking }: SectionsBottomProps) {
       </section>
 
       {/* CONTACTS */}
-      <section id="contacts" className="section-padding bg-white">
+      <section id="contacts" className="section-padding bg-white flower-of-life-bg">
         <div className="container-max">
           <div className="text-center mb-14">
             <p className="font-body text-sage text-sm uppercase tracking-[0.2em] mb-3">Контакты</p>

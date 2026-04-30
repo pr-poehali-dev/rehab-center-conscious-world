@@ -103,7 +103,7 @@ export default function SectionsTop({ onBooking, scrollTo }: SectionsTopProps) {
       </section>
 
       {/* ABOUT */}
-      <section id="about" className="section-padding bg-white">
+      <section id="about" className="section-padding bg-white flower-of-life-bg">
         <div className="container-max">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
@@ -147,7 +147,7 @@ export default function SectionsTop({ onBooking, scrollTo }: SectionsTopProps) {
       </section>
 
       {/* SERVICES */}
-      <section id="services" className="section-padding bg-warm-cream">
+      <section id="services" className="section-padding bg-warm-cream flower-of-life-bg">
         <div className="container-max">
           <div className="text-center mb-14">
             <p className="font-body text-sage text-sm uppercase tracking-[0.2em] mb-3">Услуги</p>
@@ -178,7 +178,7 @@ export default function SectionsTop({ onBooking, scrollTo }: SectionsTopProps) {
       </section>
 
       {/* PROGRAMS */}
-      <section id="programs" className="section-padding bg-white">
+      <section id="programs" className="section-padding bg-white flower-of-life-bg">
         <div className="container-max">
           <div className="text-center mb-14">
             <p className="font-body text-sage text-sm uppercase tracking-[0.2em] mb-3">Программы</p>
