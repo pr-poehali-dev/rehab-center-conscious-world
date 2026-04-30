@@ -3,8 +3,10 @@ import hashlib
 import os
 import uuid
 import urllib.request
+import psycopg2
 
 TINKOFF_API = "https://securepay.tinkoff.ru/v2"
+SCHEMA = "t_p7834125_rehab_center_conscio"
 
 # Маппинг метода оплаты на Route для Тинькофф
 PAYMENT_ROUTES = {
@@ -31,8 +33,24 @@ def tinkoff_request(method: str, payload: dict) -> dict:
         return json.loads(resp.read().decode("utf-8"))
 
 
+def save_appointment(client_name, client_phone, client_email, service_name, service_amount, payment_method, payment_id, order_id):
+    """Сохранить запись клиента в базу данных"""
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""INSERT INTO {SCHEMA}.appointments
+                (client_name, client_phone, client_email, service_name, service_amount, payment_method, payment_id, order_id, payment_status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pending')""",
+            (client_name, client_phone, client_email or None, service_name, service_amount, payment_method, str(payment_id), order_id)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def handler(event: dict, context) -> dict:
-    """Создание платежа через Тинькофф Эквайринг. Поддерживаются методы: card, sbp, mir"""
+    """Создание платежа через Тинькофф Эквайринг с сохранением записи клиента в БД. Поддерживаются методы: card, sbp, mir"""
     cors_headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -99,6 +117,16 @@ def handler(event: dict, context) -> dict:
     result = tinkoff_request("Init", payload)
 
     if result.get("Success"):
+        save_appointment(
+            client_name=customer_name,
+            client_phone=customer_phone,
+            client_email=customer_email,
+            service_name=item_name,
+            service_amount=amount_rub,
+            payment_method=payment_method,
+            payment_id=result["PaymentId"],
+            order_id=order_id,
+        )
         return {
             "statusCode": 200,
             "headers": cors_headers,

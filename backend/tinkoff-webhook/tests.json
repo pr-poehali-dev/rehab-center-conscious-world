@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Webhook с невалидным токеном",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "PaymentId": "123456",
+        "Status": "CONFIRMED",
+        "Token": "invalid"
+      },
+      "expectedStatus": 400,
+      "expectedBody": { "error": "Invalid token" },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -4,7 +4,8 @@
       "name": "CORS preflight",
       "method": "OPTIONS",
       "path": "/",
-      "expectedStatus": 200
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
     },
     {
       "name": "Создание демо-платежа",

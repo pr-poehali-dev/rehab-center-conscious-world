@@ -1,3 +1,4 @@
 {
+  "tinkoff-webhook": "https://functions.poehali.dev/fe9a91bb-75f3-48c1-8630-24fea6ff9a90",
   "tinkoff-payment": "https://functions.poehali.dev/50d0dabc-5bae-47b4-9cf2-bf92e66bf24e"
 }
