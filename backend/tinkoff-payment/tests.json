@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Создание демо-платежа",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "itemName": "Консультация",
+        "amount": 2000,
+        "customerName": "Тест Тестов",
+        "customerPhone": "+79001234567"
+      },
+      "expectedStatus": 200,
+      "expectedBody": { "paymentUrl": "string" },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

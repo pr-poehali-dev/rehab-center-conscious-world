@@ -1,5 +1,6 @@
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
+import { PaymentItem } from "@/components/PaymentModal";
 
 const HERO_IMAGE = "https://cdn.poehali.dev/projects/184f0e0d-a684-434f-8d45-5000ddbe56df/files/d152e661-1e44-4189-8c8d-fcf36b52b105.jpg";
 const ABOUT_IMAGE = "https://cdn.poehali.dev/projects/184f0e0d-a684-434f-8d45-5000ddbe56df/files/49310e31-d9fe-48b0-a186-15f67e0156ff.jpg";
@@ -19,6 +20,7 @@ const PROGRAMS = [
     title: "«Новое начало»",
     desc: "Интенсивная стационарная программа для тех, кто готов к глубоким переменам. Комплексный подход: психотерапия, групповая работа, телесные практики.",
     price: "от 85 000 ₽",
+    amount: 85000,
     color: "bg-sage-light",
   },
   {
@@ -26,6 +28,7 @@ const PROGRAMS = [
     title: "«Путь к себе»",
     desc: "Амбулаторная программа долгосрочной поддержки. Еженедельные сессии, домашние практики и постоянное сопровождение куратора.",
     price: "от 24 000 ₽/мес",
+    amount: 24000,
     color: "bg-accent",
   },
   {
@@ -33,6 +36,7 @@ const PROGRAMS = [
     title: "«Перезагрузка»",
     desc: "Выездная программа в загородном комплексе. Отдых от городского стресса, медитации, природная терапия и индивидуальные сессии.",
     price: "от 65 000 ₽",
+    amount: 65000,
     color: "bg-warm-cream",
   },
 ];
@@ -40,9 +44,10 @@ const PROGRAMS = [
 interface SectionsTopProps {
   onBooking: () => void;
   scrollTo: (href: string) => void;
+  onPayment: (item: PaymentItem) => void;
 }
 
-export default function SectionsTop({ onBooking, scrollTo }: SectionsTopProps) {
+export default function SectionsTop({ onBooking, scrollTo, onPayment }: SectionsTopProps) {
   return (
     <>
       {/* HERO */}
@@ -204,14 +209,24 @@ export default function SectionsTop({ onBooking, scrollTo }: SectionsTopProps) {
                 </span>
                 <h3 className="font-display text-3xl text-deep-slate mb-4">{p.title}</h3>
                 <p className="font-body text-sm text-muted-foreground leading-relaxed flex-1">{p.desc}</p>
-                <div className="mt-8 pt-6 border-t border-warm-tan flex items-center justify-between">
-                  <span className="font-display text-xl text-deep-slate">{p.price}</span>
+                <div className="mt-8 pt-6 border-t border-warm-tan">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-display text-xl text-deep-slate">{p.price}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={onBooking}
+                      className="text-sage hover:bg-white/60 font-body text-sm rounded-xl"
+                    >
+                      Подробнее
+                    </Button>
+                  </div>
                   <Button
-                    size="sm"
-                    onClick={onBooking}
-                    className="bg-sage text-primary-foreground hover:opacity-90 font-body text-sm rounded-xl"
+                    className="w-full bg-sage text-primary-foreground hover:opacity-90 font-body text-sm rounded-xl"
+                    onClick={() => onPayment({ name: `Программа ${p.title}`, amount: p.amount, description: p.tag })}
                   >
-                    Подробнее
+                    <Icon name="CreditCard" size={15} className="mr-2" />
+                    Оплатить онлайн
                   </Button>
                 </div>
               </div>
@@ -226,15 +241,24 @@ export default function SectionsTop({ onBooking, scrollTo }: SectionsTopProps) {
           <h2 className="font-display text-4xl md:text-5xl text-primary-foreground mb-4 italic">
             Первый шаг — самый важный
           </h2>
-          <p className="font-body text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">
-            Бесплатная первичная консультация — 30 минут с нашим специалистом без обязательств
+          <p className="font-body text-primary-foreground/80 text-lg mb-6 max-w-xl mx-auto">
+            Первичная консультация — 30 минут с нашим специалистом
           </p>
-          <Button
-            onClick={onBooking}
-            className="bg-white text-sage hover:bg-warm-cream font-body text-base px-10 py-6 rounded-xl font-medium"
-          >
-            Записаться бесплатно
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button
+              onClick={onBooking}
+              className="bg-white/20 border border-white/40 text-white hover:bg-white/30 font-body text-base px-8 py-6 rounded-xl"
+            >
+              Записаться бесплатно
+            </Button>
+            <Button
+              onClick={() => onPayment({ name: "Первичная консультация", amount: 2000, description: "30 минут со специалистом" })}
+              className="bg-white text-sage hover:bg-warm-cream font-body text-base px-8 py-6 rounded-xl font-medium"
+            >
+              <Icon name="CreditCard" size={18} className="mr-2" />
+              Оплатить консультацию — 2 000 ₽
+            </Button>
+          </div>
         </div>
       </section>
     </>
