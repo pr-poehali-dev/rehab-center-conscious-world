@@ -12,7 +12,38 @@ interface BookingModalProps {
 }
 
 export default function BookingModal({ open, onClose }: BookingModalProps) {
-  const [form, setForm] = useState({ name: "", phone: "", service: "", date: "", comment: "" });
+  const [form, setForm] = useState({ name: "", phone: "", city: "", service: "", date: "", comment: "" });
+  const [cityInput, setCityInput] = useState("");
+  const [cityFiltered, setCityFiltered] = useState<string[]>([]);
+  const [cityOpen, setCityOpen] = useState(false);
+
+  const CITIES = [
+    "Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург", "Казань",
+    "Нижний Новгород", "Челябинск", "Самара", "Омск", "Ростов-на-Дону",
+    "Уфа", "Красноярск", "Воронеж", "Пермь", "Волгоград", "Краснодар",
+    "Саратов", "Тюмень", "Тольятти", "Иркутск", "Барнаул", "Ульяновск",
+    "Владивосток", "Ярославль", "Хабаровск", "Махачкала", "Томск", "Оренбург",
+    "Кемерово", "Новокузнецк", "Рязань", "Пенза", "Липецк", "Астрахань",
+    "Тула", "Киров", "Чебоксары", "Калининград", "Брянск", "Иваново",
+    "Курск", "Магнитогорск", "Тверь", "Набережные Челны", "Белгород",
+  ];
+
+  const handleCityInput = (val: string) => {
+    setCityInput(val);
+    setForm(f => ({ ...f, city: val }));
+    if (val.length > 0) {
+      setCityFiltered(CITIES.filter(c => c.toLowerCase().startsWith(val.toLowerCase())).slice(0, 6));
+      setCityOpen(true);
+    } else {
+      setCityOpen(false);
+    }
+  };
+
+  const selectCity = (city: string) => {
+    setCityInput(city);
+    setForm(f => ({ ...f, city }));
+    setCityOpen(false);
+  };
   const [sent, setSent] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -58,6 +89,32 @@ export default function BookingModal({ open, onClose }: BookingModalProps) {
                 onChange={e => setForm({ ...form, phone: e.target.value })}
                 required
               />
+            </div>
+            <div className="relative">
+              <Label className="font-body text-sm text-deep-slate">Город или населённый пункт</Label>
+              <Input
+                className="mt-1 border-warm-tan focus:border-sage"
+                placeholder="Начните вводить..."
+                value={cityInput}
+                onChange={e => handleCityInput(e.target.value)}
+                onBlur={() => setTimeout(() => setCityOpen(false), 150)}
+                autoComplete="off"
+                required
+              />
+              {cityOpen && cityFiltered.length > 0 && (
+                <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-warm-tan rounded-xl shadow-lg overflow-hidden">
+                  {cityFiltered.map(city => (
+                    <button
+                      key={city}
+                      type="button"
+                      className="w-full text-left px-4 py-2.5 font-body text-sm text-deep-slate hover:bg-sage-light transition-colors"
+                      onMouseDown={() => selectCity(city)}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <Label className="font-body text-sm text-deep-slate">Направление</Label>
