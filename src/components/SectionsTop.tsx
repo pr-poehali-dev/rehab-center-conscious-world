@@ -132,8 +132,8 @@ export default function SectionsTop({
               <span className="text-sage italic">МИР</span>
             </h1>
             <p className="font-body text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg animate-fade-in-up delay-200">
-              Место, где начинается путь к себе. Профессиональная помощь в
-              восстановлении, обретении внутренней гармонии и новой жизни.
+              Система зананий и навыков позволяющая достичь своих целей в жизни.
+              "Мир" - в котором ты не один... "Место", где ты обретешь силу...
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-300">
               <Button
