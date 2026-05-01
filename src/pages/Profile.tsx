@@ -52,7 +52,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (!token) { navigate("/login"); return; }
-    fetch(PROFILE_URL, { headers: { "Authorization": `Bearer ${token}` } })
+    fetch(PROFILE_URL, { headers: { "X-Authorization": `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => {
         if (data.error) { navigate("/login"); return; }
@@ -68,7 +68,7 @@ export default function Profile() {
     setSavingName(true);
     await fetch(PROFILE_URL, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", "X-Authorization": `Bearer ${token}` },
       body: JSON.stringify({ name: nameInput }),
     });
     if (profile) setProfile({ ...profile, name: nameInput });
@@ -81,7 +81,7 @@ export default function Profile() {
     if (!token) return;
     await fetch(`${PROFILE_URL}?action=remove-fav`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", "X-Authorization": `Bearer ${token}` },
       body: JSON.stringify({ specialistId }),
     });
     if (profile) {
@@ -105,7 +105,7 @@ export default function Profile() {
     try {
       const res = await fetch(`${AUTH_URL}?action=change-password`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", "X-Authorization": `Bearer ${token}` },
         body: JSON.stringify({ oldPassword: pwForm.old, newPassword: pwForm.new }),
       });
       const data = await res.json();
