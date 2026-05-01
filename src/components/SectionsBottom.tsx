@@ -1,5 +1,6 @@
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { BLOG_POSTS } from "@/data/blogPosts";
 import { SPECIALISTS } from "@/data/specialists";
