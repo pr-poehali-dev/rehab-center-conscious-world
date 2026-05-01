@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import Icon from "@/components/ui/icon";
 import FlowerOfLife from "@/components/FlowerOfLife";
 
-const GET_BOOKINGS_URL = "https://functions.poehali.dev/321ab120-4da2-4b36-a74f-f3637f96ab3e";
+const GET_BOOKINGS_URL = "https://functions.poehali.dev/9821ab4f-4a9c-48fa-8647-754b1a9addf0";
 const ADMIN_PASSWORD = "osoznanie2024";
 const SESSION_KEY = "admin_auth";
 

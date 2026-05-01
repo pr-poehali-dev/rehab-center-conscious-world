@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "CORS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Получение рейтинга фонда",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": { "donors": [] },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Добавление пожертвования",
+      "method": "POST",
+      "path": "/",
+      "body": { "donorId": "volkov", "amount": 50000 },
+      "expectedStatus": 200,
+      "expectedBody": { "success": true },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -46,7 +46,7 @@ export default function BookingModal({ open, onClose }: BookingModalProps) {
   };
   const [sent, setSent] = useState(false);
 
-  const BOOKING_URL = "https://functions.poehali.dev/2ac9824b-875a-44f4-9c2f-f7e158c394b7";
+  const BOOKING_URL = "https://functions.poehali.dev/9821ab4f-4a9c-48fa-8647-754b1a9addf0";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

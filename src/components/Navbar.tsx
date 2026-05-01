@@ -12,6 +12,7 @@ const NAV_LINKS_BEFORE = [
 
 const NAV_LINKS_AFTER = [
   { label: "Отзывы", href: "#reviews" },
+  { label: "Фонд", href: "#fund" },
   { label: "Контакты", href: "#contacts" },
 ];
 
