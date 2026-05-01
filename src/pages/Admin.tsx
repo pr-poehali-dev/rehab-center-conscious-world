@@ -9,6 +9,22 @@ const GET_BOOKINGS_URL = "https://functions.poehali.dev/9821ab4f-4a9c-48fa-8647-
 const ADMIN_PASSWORD = "Inter56rus@";
 const SESSION_KEY = "admin_auth";
 
+const BOOKINGS_URL = "https://functions.poehali.dev/9821ab4f-4a9c-48fa-8647-754b1a9addf0";
+
+const STATUS_LABELS: Record<string, string> = {
+  new: "Новая",
+  confirmed: "Подтверждена",
+  completed: "Завершена",
+  cancelled: "Отменена",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  new: "bg-blue-50 text-blue-600 border-blue-100",
+  confirmed: "bg-sage-light text-sage border-sage/20",
+  completed: "bg-muted text-muted-foreground border-border",
+  cancelled: "bg-red-50 text-red-500 border-red-100",
+};
+
 interface Booking {
   id: number;
   name: string;
@@ -18,6 +34,7 @@ interface Booking {
   date: string;
   comment: string;
   created_at: string;
+  status: string;
 }
 
 export default function Admin() {
@@ -46,16 +63,31 @@ export default function Admin() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const res = await fetch(GET_BOOKINGS_URL);
+      const res = await fetch(BOOKINGS_URL);
       const data = await res.json();
       setBookings(data.bookings || []);
       setTotal(data.total || 0);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateStatus = async (id: number, status: string) => {
+    setUpdatingId(id);
+    try {
+      await fetch(BOOKINGS_URL, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -193,6 +225,8 @@ export default function Admin() {
                     <th className="text-left px-4 py-3 text-muted-foreground font-body font-normal">Услуга</th>
                     <th className="text-left px-4 py-3 text-muted-foreground font-body font-normal">Дата</th>
                     <th className="text-left px-4 py-3 text-muted-foreground font-body font-normal">Заявка</th>
+                    <th className="text-left px-4 py-3 text-muted-foreground font-body font-normal">Статус</th>
+                    <th className="text-left px-4 py-3 text-muted-foreground font-body font-normal">Действия</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,6 +245,33 @@ export default function Admin() {
                       </td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{b.date}</td>
                       <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{b.created_at}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2.5 py-1 rounded-full border font-body ${STATUS_COLORS[b.status] || STATUS_COLORS.new}`}>
+                          {STATUS_LABELS[b.status] || "Новая"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          {b.status !== "confirmed" && (
+                            <Button size="sm" disabled={updatingId === b.id} onClick={() => updateStatus(b.id, "confirmed")}
+                              className="h-7 px-2.5 text-xs bg-sage text-primary-foreground hover:opacity-90 font-body">
+                              Подтвердить
+                            </Button>
+                          )}
+                          {b.status !== "completed" && (
+                            <Button size="sm" variant="outline" disabled={updatingId === b.id} onClick={() => updateStatus(b.id, "completed")}
+                              className="h-7 px-2.5 text-xs border-border text-muted-foreground hover:text-deep-slate font-body">
+                              Завершить
+                            </Button>
+                          )}
+                          {b.status !== "cancelled" && (
+                            <Button size="sm" variant="ghost" disabled={updatingId === b.id} onClick={() => updateStatus(b.id, "cancelled")}
+                              className="h-7 px-2.5 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 font-body">
+                              Отменить
+                            </Button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -223,7 +284,9 @@ export default function Admin() {
                 <div key={b.id} className="bg-white rounded-2xl border border-border p-4">
                   <div className="flex items-start justify-between mb-2">
                     <p className="font-body font-medium text-deep-slate">{b.name}</p>
-                    <span className="bg-sage-light text-sage text-xs px-2.5 py-1 rounded-full font-body">{b.service}</span>
+                    <span className={`text-xs px-2.5 py-1 rounded-full border font-body ${STATUS_COLORS[b.status] || STATUS_COLORS.new}`}>
+                      {STATUS_LABELS[b.status] || "Новая"}
+                    </span>
                   </div>
                   <div className="space-y-1 text-sm font-body text-muted-foreground">
                     <div className="flex items-center gap-2">
@@ -234,6 +297,7 @@ export default function Admin() {
                       <Icon name="MapPin" size={13} />
                       <span>{b.city}</span>
                     </div>
+                    <span className="inline-block bg-sage-light text-sage text-xs px-2.5 py-1 rounded-full">{b.service}</span>
                     {b.date !== "—" && (
                       <div className="flex items-center gap-2">
                         <Icon name="Calendar" size={13} />
@@ -244,6 +308,20 @@ export default function Admin() {
                       <p className="mt-2 text-xs bg-muted/40 rounded-lg px-3 py-2">{b.comment}</p>
                     )}
                     <p className="text-xs text-muted-foreground/60 pt-1">{b.created_at}</p>
+                  </div>
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {b.status !== "confirmed" && (
+                      <Button size="sm" disabled={updatingId === b.id} onClick={() => updateStatus(b.id, "confirmed")}
+                        className="h-7 px-3 text-xs bg-sage text-primary-foreground font-body">Подтвердить</Button>
+                    )}
+                    {b.status !== "completed" && (
+                      <Button size="sm" variant="outline" disabled={updatingId === b.id} onClick={() => updateStatus(b.id, "completed")}
+                        className="h-7 px-3 text-xs border-border text-muted-foreground font-body">Завершить</Button>
+                    )}
+                    {b.status !== "cancelled" && (
+                      <Button size="sm" variant="ghost" disabled={updatingId === b.id} onClick={() => updateStatus(b.id, "cancelled")}
+                        className="h-7 px-3 text-xs text-red-400 hover:text-red-600 font-body">Отменить</Button>
+                    )}
                   </div>
                 </div>
               ))}

@@ -15,7 +15,7 @@ SERVICE_LABELS = {
 
 cors_headers = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-Authorization",
 }
 
@@ -50,7 +50,7 @@ def handler(event: dict, context) -> dict:
         try:
             cur = conn.cursor()
             cur.execute(
-                f"""SELECT id, client_name, client_phone, client_city, service, preferred_date, comment, created_at
+                f"""SELECT id, client_name, client_phone, client_city, service, preferred_date, comment, created_at, status
                     FROM {SCHEMA}.bookings
                     ORDER BY created_at DESC
                     LIMIT 200"""
@@ -69,10 +69,27 @@ def handler(event: dict, context) -> dict:
                 "date": str(r[5]) if r[5] else "—",
                 "comment": r[6] or "",
                 "created_at": r[7].strftime("%d.%m.%Y %H:%M") if r[7] else "",
+                "status": r[8] or "new",
             }
             for r in rows
         ]
         return {"statusCode": 200, "headers": cors_headers, "body": json.dumps({"bookings": bookings, "total": len(bookings)})}
+
+    if method == "PUT":
+        body = json.loads(event.get("body") or "{}")
+        booking_id = body.get("id")
+        status = body.get("status", "confirmed")
+        allowed = {"new", "confirmed", "completed", "cancelled"}
+        if not booking_id or status not in allowed:
+            return {"statusCode": 400, "headers": cors_headers, "body": json.dumps({"error": "Некорректные данные"})}
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
+        try:
+            cur = conn.cursor()
+            cur.execute(f"UPDATE {SCHEMA}.bookings SET status = %s WHERE id = %s", (status, booking_id))
+            conn.commit()
+        finally:
+            conn.close()
+        return {"statusCode": 200, "headers": cors_headers, "body": json.dumps({"success": True})}
 
     if method == "POST":
         headers = event.get("headers") or {}
