@@ -80,6 +80,13 @@ export default function Navbar({ onBooking }: NavbarProps) {
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          <Link
+            to={localStorage.getItem("auth_token") ? "/profile" : "/login"}
+            className="hidden md:flex items-center gap-1.5 font-body text-sm text-muted-foreground hover:text-deep-slate transition-colors"
+          >
+            <Icon name="User" size={16} />
+            {localStorage.getItem("auth_token") ? (localStorage.getItem("auth_name") || "Кабинет") : "Войти"}
+          </Link>
           <Button
             onClick={onBooking}
             className="hidden md:inline-flex bg-sage text-primary-foreground hover:opacity-90 font-body text-sm px-5"
@@ -135,6 +142,14 @@ export default function Navbar({ onBooking }: NavbarProps) {
               {link.label}
             </button>
           ))}
+          <Link
+            to={localStorage.getItem("auth_token") ? "/profile" : "/login"}
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2 font-body text-sm text-deep-slate py-1"
+          >
+            <Icon name="User" size={15} />
+            {localStorage.getItem("auth_token") ? (localStorage.getItem("auth_name") || "Личный кабинет") : "Войти"}
+          </Link>
           <Button
             onClick={() => { onBooking(); setMobileMenuOpen(false); }}
             className="bg-sage text-primary-foreground hover:opacity-90 font-body text-sm w-full"

@@ -8,20 +8,19 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Получение рейтинга фонда",
+      "name": "Рейтинг фонда",
       "method": "GET",
-      "path": "/",
+      "path": "/?section=fund",
       "expectedStatus": 200,
-      "expectedBody": { "donors": [] },
+      "expectedBody": {"donors": []},
       "bodyMatcher": "partial"
     },
     {
-      "name": "Добавление пожертвования",
-      "method": "POST",
-      "path": "/",
-      "body": { "donorId": "volkov", "amount": 50000 },
+      "name": "Отзывы специалиста",
+      "method": "GET",
+      "path": "/?section=reviews&specialist_id=mikhailova",
       "expectedStatus": 200,
-      "expectedBody": { "success": true },
+      "expectedBody": {"reviews": []},
       "bodyMatcher": "partial"
     }
   ]

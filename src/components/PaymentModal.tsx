@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Icon from "@/components/ui/icon";
 
-const PAYMENT_URL = "https://functions.poehali.dev/50d0dabc-5bae-47b4-9cf2-bf92e66bf24e";
+const PAYMENT_URL = "https://functions.poehali.dev/0b67ebd5-e041-4b9f-bfe4-f97eb68e8477";
 
 export interface PaymentItem {
   name: string;

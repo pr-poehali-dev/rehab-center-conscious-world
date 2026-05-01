@@ -9,7 +9,7 @@ import Navbar from "@/components/Navbar";
 import BookingModal from "@/components/BookingModal";
 import { SPECIALISTS } from "@/data/specialists";
 
-const REVIEWS_URL = "https://functions.poehali.dev/e0ceee1e-2ae4-4c5b-9490-49f5efa20315";
+const REVIEWS_URL = "https://functions.poehali.dev/95ecc764-d099-486b-a48c-dc8639786f3b";
 
 interface Review {
   id: number;
@@ -41,6 +41,8 @@ function StarRating({ value, onChange }: { value: number; onChange?: (v: number)
   );
 }
 
+const PROFILE_URL = "https://functions.poehali.dev/4f103804-ef0e-4159-890e-6b42228de37d";
+
 export default function SpecialistPage() {
   const { id } = useParams<{ id: string }>();
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -50,11 +52,13 @@ export default function SpecialistPage() {
   const [form, setForm] = useState({ name: "", rating: 5, text: "" });
   const [formStep, setFormStep] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [formError, setFormError] = useState("");
+  const [isFav, setIsFav] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch(`${REVIEWS_URL}?specialist_id=${id}`);
+        const res = await fetch(`${REVIEWS_URL}?section=reviews&specialist_id=${id}`);
         const data = await res.json();
         setReviews(data.reviews || []);
         setAvgRating(data.avgRating);
@@ -71,7 +75,7 @@ export default function SpecialistPage() {
 
   const fetchReviews = async () => {
     try {
-      const res = await fetch(`${REVIEWS_URL}?specialist_id=${sp.id}`);
+      const res = await fetch(`${REVIEWS_URL}?section=reviews&specialist_id=${sp.id}`);
       const data = await res.json();
       setReviews(data.reviews || []);
       setAvgRating(data.avgRating);
@@ -84,7 +88,7 @@ export default function SpecialistPage() {
     setFormStep("loading");
     setFormError("");
     try {
-      const res = await fetch(REVIEWS_URL, {
+      const res = await fetch(`${REVIEWS_URL}?section=reviews`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -165,7 +169,7 @@ export default function SpecialistPage() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 flex-wrap">
                 <Button
                   onClick={() => setBookingOpen(true)}
                   className="bg-sage text-primary-foreground hover:opacity-90 font-body gap-2 px-6"
@@ -173,6 +177,32 @@ export default function SpecialistPage() {
                   <Icon name="Calendar" size={16} />
                   Записаться — от {sp.price.toLocaleString("ru-RU")} ₽
                 </Button>
+                {localStorage.getItem("auth_token") ? (
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      setFavLoading(true);
+                      const action = isFav ? "remove-fav" : "add-fav";
+                      await fetch(`${PROFILE_URL}?action=${action}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("auth_token")}` },
+                        body: JSON.stringify({ specialistId: sp.id }),
+                      });
+                      setIsFav(!isFav);
+                      setFavLoading(false);
+                    }}
+                    disabled={favLoading}
+                    className={`font-body gap-2 border-sage ${isFav ? "bg-sage-light text-sage" : "text-sage hover:bg-sage-light"}`}
+                  >
+                    <Icon name="Heart" size={15} className={isFav ? "fill-sage" : ""} />
+                    {isFav ? "В избранном" : "В избранное"}
+                  </Button>
+                ) : (
+                  <Link to="/login" className="font-body text-sm text-muted-foreground hover:text-sage transition-colors flex items-center gap-1.5">
+                    <Icon name="Heart" size={14} />
+                    Добавить в избранное
+                  </Link>
+                )}
               </div>
             </div>
           </div>

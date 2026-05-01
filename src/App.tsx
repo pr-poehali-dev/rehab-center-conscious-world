@@ -11,6 +11,8 @@ import BlogPost from "./pages/BlogPost";
 import Specialists from "./pages/Specialists";
 import SpecialistPage from "./pages/SpecialistPage";
 import Fund from "./pages/Fund";
+import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +31,8 @@ const App = () => (
           <Route path="/specialists" element={<Specialists />} />
           <Route path="/specialists/:id" element={<SpecialistPage />} />
           <Route path="/fund" element={<Fund />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/profile" element={<Profile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*.tsx" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />

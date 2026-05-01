@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import BookingModal from "@/components/BookingModal";
 import FlowerOfLife from "@/components/FlowerOfLife";
 
-const FUND_URL = "https://functions.poehali.dev/af4da6ee-fdb2-4b38-a89a-74c8b892c4c2";
+const FUND_URL = "https://functions.poehali.dev/95ecc764-d099-486b-a48c-dc8639786f3b?section=fund";
 
 interface FundDonor {
   id: string;

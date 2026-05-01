@@ -1,7 +1,7 @@
 {
-  "bookings": "https://functions.poehali.dev/9821ab4f-4a9c-48fa-8647-754b1a9addf0",
-  "fund": "https://functions.poehali.dev/af4da6ee-fdb2-4b38-a89a-74c8b892c4c2",
-  "specialist-reviews": "https://functions.poehali.dev/e0ceee1e-2ae4-4c5b-9490-49f5efa20315",
-  "tinkoff-webhook": "https://functions.poehali.dev/fe9a91bb-75f3-48c1-8630-24fea6ff9a90",
-  "tinkoff-payment": "https://functions.poehali.dev/50d0dabc-5bae-47b4-9cf2-bf92e66bf24e"
+  "profile": "https://functions.poehali.dev/4f103804-ef0e-4159-890e-6b42228de37d",
+  "social": "https://functions.poehali.dev/95ecc764-d099-486b-a48c-dc8639786f3b",
+  "auth": "https://functions.poehali.dev/787350a7-d77a-48bb-99f6-c77466ca7470",
+  "tinkoff": "https://functions.poehali.dev/0b67ebd5-e041-4b9f-bfe4-f97eb68e8477",
+  "bookings": "https://functions.poehali.dev/9821ab4f-4a9c-48fa-8647-754b1a9addf0"
 }
