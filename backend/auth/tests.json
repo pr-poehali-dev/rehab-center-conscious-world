@@ -6,6 +6,24 @@
       "path": "/",
       "expectedStatus": 200,
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Регистрация",
+      "method": "POST",
+      "path": "/?action=register",
+      "body": { "name": "Тест", "email": "test_reg_001@example.com", "password": "test123" },
+      "expectedStatus": 200,
+      "expectedBody": { "success": true },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Вход",
+      "method": "POST",
+      "path": "/?action=login",
+      "body": { "email": "test_reg_001@example.com", "password": "test123" },
+      "expectedStatus": 200,
+      "expectedBody": { "success": true },
+      "bodyMatcher": "partial"
     }
   ]
 }

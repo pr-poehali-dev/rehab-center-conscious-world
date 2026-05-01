@@ -8,52 +8,57 @@ import FlowerOfLife from "@/components/FlowerOfLife";
 
 const AUTH_URL = "https://functions.poehali.dev/787350a7-d77a-48bb-99f6-c77466ca7470";
 
+function saveSession(data: { token: string; email: string; name: string | null }) {
+  localStorage.setItem("auth_token", data.token);
+  localStorage.setItem("auth_email", data.email);
+  localStorage.setItem("auth_name", data.name || "");
+}
+
 export default function Login() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<"email" | "code">("email");
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSendCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes("@")) { setError("Введите корректный email"); return; }
-    setLoading(true); setError("");
-    try {
-      const res = await fetch(`${AUTH_URL}?action=send`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      });
-      const data = await res.json();
-      if (data.success) setStep("code");
-      else setError(data.error || "Ошибка отправки");
-    } catch { setError("Ошибка соединения"); }
-    finally { setLoading(false); }
+  const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm(f => ({ ...f, [field]: e.target.value }));
+    setError("");
   };
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length !== 6) { setError("Введите 6-значный код"); return; }
-    setLoading(true); setError("");
+    setLoading(true);
+    setError("");
     try {
-      const res = await fetch(`${AUTH_URL}?action=verify`, {
+      const action = mode === "register" ? "register" : "login";
+      const body = mode === "register"
+        ? { name: form.name.trim(), email: form.email.trim().toLowerCase(), password: form.password }
+        : { email: form.email.trim().toLowerCase(), password: form.password };
+
+      const res = await fetch(`${AUTH_URL}?action=${action}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), code }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (data.success) {
-        localStorage.setItem("auth_token", data.token);
-        localStorage.setItem("auth_email", data.email);
-        localStorage.setItem("auth_name", data.name || "");
+        saveSession(data);
         navigate("/profile");
       } else {
-        setError(data.error || "Неверный код");
+        setError(data.error || "Ошибка");
       }
-    } catch { setError("Ошибка соединения"); }
-    finally { setLoading(false); }
+    } catch {
+      setError("Ошибка соединения");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchMode = () => {
+    setMode(m => m === "login" ? "register" : "login");
+    setError("");
   };
 
   return (
@@ -67,83 +72,91 @@ export default function Login() {
         </Link>
 
         <div className="bg-white rounded-3xl border border-border p-8 shadow-sm">
-          {step === "email" ? (
-            <>
-              <h1 className="font-display text-2xl text-deep-slate mb-2">Вход в кабинет</h1>
-              <p className="font-body text-sm text-muted-foreground mb-6">
-                Введите email — пришлём код подтверждения
-              </p>
-              <form onSubmit={handleSendCode} className="space-y-4">
-                <div>
-                  <Label className="font-body text-sm text-deep-slate">Email</Label>
-                  <Input
-                    type="email"
-                    className="mt-1 border-warm-tan focus:border-sage"
-                    placeholder="example@mail.ru"
-                    value={email}
-                    onChange={e => { setEmail(e.target.value); setError(""); }}
-                    autoFocus
-                  />
-                </div>
-                {error && <p className="text-sm text-destructive font-body">{error}</p>}
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-sage text-primary-foreground hover:opacity-90 font-body"
-                >
-                  {loading ? "Отправляем..." : "Получить код"}
-                </Button>
-              </form>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => { setStep("email"); setCode(""); setError(""); }}
-                className="flex items-center gap-1 text-muted-foreground hover:text-sage font-body text-sm mb-5 transition-colors"
-              >
-                <Icon name="ArrowLeft" size={14} /> Назад
-              </button>
-              <h1 className="font-display text-2xl text-deep-slate mb-2">Введите код</h1>
-              <p className="font-body text-sm text-muted-foreground mb-1">
-                Отправили 6-значный код на
-              </p>
-              <p className="font-body text-sm font-medium text-deep-slate mb-6">{email}</p>
-              <form onSubmit={handleVerify} className="space-y-4">
-                <div>
-                  <Label className="font-body text-sm text-deep-slate">Код из письма</Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    className="mt-1 border-warm-tan focus:border-sage text-center text-2xl tracking-widest font-display"
-                    placeholder="000000"
-                    value={code}
-                    onChange={e => { setCode(e.target.value.replace(/\D/g, "")); setError(""); }}
-                    autoFocus
-                  />
-                </div>
-                {error && <p className="text-sm text-destructive font-body">{error}</p>}
-                <Button
-                  type="submit"
-                  disabled={loading || code.length !== 6}
-                  className="w-full bg-sage text-primary-foreground hover:opacity-90 font-body"
-                >
-                  {loading ? "Проверяем..." : "Войти"}
-                </Button>
+          <h1 className="font-display text-2xl text-deep-slate mb-1">
+            {mode === "login" ? "Вход в кабинет" : "Регистрация"}
+          </h1>
+          <p className="font-body text-sm text-muted-foreground mb-6">
+            {mode === "login"
+              ? "Введите email и пароль для входа"
+              : "Создайте аккаунт — это займёт минуту"}
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "register" && (
+              <div>
+                <Label className="font-body text-sm text-deep-slate">Ваше имя</Label>
+                <Input
+                  className="mt-1 border-warm-tan focus:border-sage"
+                  placeholder="Как вас зовут?"
+                  value={form.name}
+                  onChange={set("name")}
+                  autoFocus
+                />
+              </div>
+            )}
+
+            <div>
+              <Label className="font-body text-sm text-deep-slate">Email</Label>
+              <Input
+                type="email"
+                className="mt-1 border-warm-tan focus:border-sage"
+                placeholder="example@mail.ru"
+                value={form.email}
+                onChange={set("email")}
+                autoFocus={mode === "login"}
+              />
+            </div>
+
+            <div>
+              <Label className="font-body text-sm text-deep-slate">Пароль</Label>
+              <div className="relative mt-1">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  className="border-warm-tan focus:border-sage pr-10"
+                  placeholder={mode === "register" ? "Минимум 6 символов" : "Ваш пароль"}
+                  value={form.password}
+                  onChange={set("password")}
+                />
                 <button
                   type="button"
-                  onClick={() => handleSendCode({ preventDefault: () => {} } as React.FormEvent)}
-                  className="w-full font-body text-xs text-muted-foreground hover:text-sage transition-colors"
+                  onClick={() => setShowPassword(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-deep-slate transition-colors"
                 >
-                  Отправить код повторно
+                  <Icon name={showPassword ? "EyeOff" : "Eye"} size={16} />
                 </button>
-              </form>
-            </>
-          )}
+              </div>
+            </div>
+
+            {error && (
+              <p className="text-sm text-destructive font-body">{error}</p>
+            )}
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-sage text-primary-foreground hover:opacity-90 font-body"
+            >
+              {loading
+                ? (mode === "register" ? "Регистрируем..." : "Входим...")
+                : (mode === "register" ? "Зарегистрироваться" : "Войти")}
+            </Button>
+          </form>
+
+          <div className="mt-5 text-center">
+            <p className="font-body text-sm text-muted-foreground">
+              {mode === "login" ? "Ещё нет аккаунта? " : "Уже есть аккаунт? "}
+              <button
+                onClick={switchMode}
+                className="text-sage hover:opacity-80 transition-opacity font-medium"
+              >
+                {mode === "login" ? "Зарегистрироваться" : "Войти"}
+              </button>
+            </p>
+          </div>
         </div>
 
         <p className="text-center font-body text-xs text-muted-foreground mt-6">
-          Войдя, вы соглашаетесь с{" "}
+          Входя, вы соглашаетесь с{" "}
           <Link to="/" className="hover:text-sage transition-colors underline underline-offset-2">
             условиями использования
           </Link>
