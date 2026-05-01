@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import BookingModal from "@/components/BookingModal";
 
 const PROFILE_URL = "https://functions.poehali.dev/4f103804-ef0e-4159-890e-6b42228de37d";
 const AUTH_URL = "https://functions.poehali.dev/787350a7-d77a-48bb-99f6-c77466ca7470";
+const SOCIAL_URL = "https://functions.poehali.dev/95ecc764-d099-486b-a48c-dc8639786f3b";
 
 interface FavoriteSpecialist {
   specialistId: string;
@@ -54,11 +55,12 @@ type Tab = "personal" | "bookings" | "favorites" | "donations" | "security";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>("personal");
+  const [activeTab, setActiveTab] = useState<Tab>((searchParams.get("tab") as Tab) || "personal");
 
   // Личные данные
   const [personalForm, setPersonalForm] = useState({
@@ -73,6 +75,11 @@ export default function Profile() {
   // Аватар
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // Пожертвование
+  const [donationAmount, setDonationAmount] = useState("");
+  const [donationStep, setDonationStep] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [donationError, setDonationError] = useState("");
 
   // Пароль
   const [pwForm, setPwForm] = useState({ old: "", new: "", confirm: "" });
@@ -165,6 +172,30 @@ export default function Profile() {
     localStorage.removeItem("auth_email");
     localStorage.removeItem("auth_name");
     navigate("/");
+  };
+
+  const handleDonate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(donationAmount);
+    if (!amount || amount <= 0) { setDonationError("Введите сумму"); return; }
+    setDonationStep("loading"); setDonationError("");
+    try {
+      const res = await fetch(`${SOCIAL_URL}?section=fund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ amount }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDonationStep("success");
+        setDonationAmount("");
+        const newDonation = { amount, date: new Date().toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", "") };
+        if (profile) setProfile({ ...profile, donations: [newDonation, ...profile.donations] });
+        setTimeout(() => setDonationStep("idle"), 3000);
+      } else {
+        setDonationError(data.error || "Ошибка"); setDonationStep("error");
+      }
+    } catch { setDonationError("Ошибка соединения"); setDonationStep("error"); }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -441,19 +472,44 @@ export default function Profile() {
 
           {/* Пожертвования */}
           {activeTab === "donations" && (
-            <div>
+            <div className="space-y-6">
+              {/* Форма взноса */}
+              <div className="bg-white rounded-2xl border border-border p-6">
+                <h3 className="font-display text-lg text-deep-slate mb-1">Сделать взнос в фонд</h3>
+                <p className="font-body text-sm text-muted-foreground mb-4">После внесения вы появитесь в рейтинге участников фонда</p>
+                {donationStep === "success" ? (
+                  <div className="flex items-center gap-3 bg-sage-light border border-sage/20 rounded-xl px-4 py-3">
+                    <Icon name="Heart" size={16} className="text-sage flex-shrink-0" />
+                    <p className="font-body text-sm text-sage font-medium">Спасибо! Взнос учтён в рейтинге фонда 🌿</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleDonate} className="flex items-start gap-3 flex-wrap">
+                    <div className="flex-1 min-w-[160px]">
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="Сумма, ₽"
+                        className="border-warm-tan focus:border-sage"
+                        value={donationAmount}
+                        onChange={e => { setDonationAmount(e.target.value); setDonationError(""); setDonationStep("idle"); }}
+                      />
+                      {donationError && <p className="text-xs text-destructive font-body mt-1">{donationError}</p>}
+                    </div>
+                    <Button type="submit" disabled={donationStep === "loading"}
+                      className="bg-sage text-primary-foreground hover:opacity-90 font-body gap-2">
+                      <Icon name="Heart" size={15} />
+                      {donationStep === "loading" ? "Отправляем..." : "Внести взнос"}
+                    </Button>
+                  </form>
+                )}
+              </div>
+
               {!profile?.donations.length ? (
-                <div className="text-center py-16">
+                <div className="text-center py-10">
                   <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Icon name="HandCoins" size={24} className="text-muted-foreground" />
                   </div>
-                  <p className="font-body text-muted-foreground mb-4">История взносов пуста</p>
-                  <Link to="/fund">
-                    <Button variant="outline" className="border-sage text-sage hover:bg-sage hover:text-primary-foreground font-body text-sm gap-2">
-                      <Icon name="Heart" size={14} />
-                      Перейти в фонд
-                    </Button>
-                  </Link>
+                  <p className="font-body text-muted-foreground">История взносов пуста — сделайте первый взнос выше</p>
                 </div>
               ) : (
                 <div className="space-y-3">

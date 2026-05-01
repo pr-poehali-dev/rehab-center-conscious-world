@@ -33,9 +33,9 @@ export default function Fund() {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [donors, setDonors] = useState<FundDonor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [donating, setDonating] = useState<{ id: string; amount: string } | null>(null);
-  const [donateStep, setDonateStep] = useState<"idle" | "loading" | "success">("idle");
+
+  const isLoggedIn = !!localStorage.getItem("auth_token");
+  const totalFund = donors.reduce((sum, d) => sum + d.totalDonated, 0);
 
   const fetchDonors = async () => {
     try {
@@ -48,24 +48,6 @@ export default function Fund() {
   };
 
   useEffect(() => { fetchDonors(); }, []);
-
-  const handleDonate = async (donorId: string) => {
-    const amount = parseFloat(donating?.amount || "0");
-    if (!amount || amount <= 0) return;
-    setDonateStep("loading");
-    try {
-      await fetch(FUND_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ donorId, amount }),
-      });
-      setDonateStep("success");
-      fetchDonors();
-      setTimeout(() => { setDonating(null); setDonateStep("idle"); }, 2500);
-    } catch { setDonateStep("idle"); }
-  };
-
-  const totalFund = donors.reduce((sum, d) => sum + d.totalDonated, 0);
 
   return (
     <div className="min-h-screen bg-background font-body">
@@ -86,16 +68,32 @@ export default function Fund() {
             Люди, которые верят в важность нашей работы и делают её возможной. Рейтинг формируется по сумме внесённых пожертвований.
           </p>
 
-          {/* Суммарный счётчик */}
-          {totalFund > 0 && (
-            <div className="inline-flex items-center gap-3 bg-white border border-border rounded-2xl px-8 py-4 shadow-sm">
-              <Icon name="Heart" size={20} className="text-sage" />
-              <div className="text-left">
-                <p className="font-body text-xs text-muted-foreground uppercase tracking-wider">Всего собрано</p>
-                <p className="font-display text-2xl text-deep-slate">{totalFund.toLocaleString("ru-RU")} ₽</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
+            {totalFund > 0 && (
+              <div className="inline-flex items-center gap-3 bg-white border border-border rounded-2xl px-8 py-4 shadow-sm">
+                <Icon name="Heart" size={20} className="text-sage" />
+                <div className="text-left">
+                  <p className="font-body text-xs text-muted-foreground uppercase tracking-wider">Всего собрано</p>
+                  <p className="font-display text-2xl text-deep-slate">{totalFund.toLocaleString("ru-RU")} ₽</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            {isLoggedIn ? (
+              <Link to="/profile?tab=donations">
+                <Button className="bg-sage text-primary-foreground hover:opacity-90 font-body gap-2 px-8 py-5 text-base">
+                  <Icon name="Heart" size={18} />
+                  Сделать взнос
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button variant="outline" className="border-sage text-sage hover:bg-sage hover:text-primary-foreground font-body gap-2 px-8 py-5 text-base">
+                  <Icon name="LogIn" size={16} />
+                  Войти, чтобы внести взнос
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </section>
 
@@ -111,89 +109,51 @@ export default function Fund() {
 
           {!loading && donors.length === 0 && (
             <div className="text-center py-20">
-              <p className="font-body text-muted-foreground">Данные фонда временно недоступны</p>
+              <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Icon name="Heart" size={24} className="text-muted-foreground" />
+              </div>
+              <p className="font-body text-muted-foreground mb-2">Пока никто не внёс пожертвований</p>
+              <p className="font-body text-sm text-muted-foreground">Станьте первым участником рейтинга!</p>
             </div>
           )}
 
-          <div className="space-y-5">
+          <div className="space-y-4">
             {donors.map((donor) => (
-              <div
-                key={donor.id}
-                className="bg-white border border-border rounded-3xl overflow-hidden card-hover transition-all"
-              >
-                <div className="flex items-start gap-6 p-6 md:p-8">
-                  {/* Ранг + фото */}
-                  <div className="relative flex-shrink-0">
-                    <img
-                      src={donor.photo}
-                      alt={donor.name}
-                      className="w-24 h-24 md:w-28 md:h-28 rounded-2xl object-cover object-top"
-                    />
-                    {donor.rank <= 3 ? (
-                      <span className="absolute -top-2 -left-2 text-2xl drop-shadow">{medals[donor.rank - 1]}</span>
+              <div key={donor.id} className="bg-white border border-border rounded-2xl p-5 md:p-6 flex items-center gap-5">
+                {/* Ранг + аватар */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-16 h-16 rounded-2xl bg-sage-light overflow-hidden flex items-center justify-center">
+                    {donor.photo ? (
+                      <img src={donor.photo} alt={donor.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="absolute -top-2 -left-2 w-7 h-7 bg-muted rounded-full flex items-center justify-center font-body text-xs text-muted-foreground font-semibold border border-border">
-                        {donor.rank}
-                      </span>
+                      <Icon name="User" size={28} className="text-sage" />
                     )}
                   </div>
-
-                  {/* Информация */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 flex-wrap">
-                      <div>
-                        <h3 className="font-display text-2xl text-deep-slate leading-tight">{donor.name}</h3>
-                        <p className="font-body text-sm text-sage mt-0.5">{donor.title}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-display text-2xl md:text-3xl text-deep-slate">
-                          {donor.totalDonated > 0
-                            ? donor.totalDonated.toLocaleString("ru-RU") + " ₽"
-                            : <span className="text-muted-foreground text-xl">—</span>}
-                        </p>
-                        {donor.donationsCount > 0 && (
-                          <p className="font-body text-xs text-muted-foreground mt-0.5">
-                            {donor.donationsCount} {pluralDonations(donor.donationsCount)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Прогресс-бар */}
-                    {totalFund > 0 && donor.totalDonated > 0 && (
-                      <div className="mt-3 mb-3">
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-sage rounded-full transition-all duration-700"
-                            style={{ width: `${Math.min(100, (donor.totalDonated / totalFund) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <p className="font-body text-sm text-muted-foreground leading-relaxed mt-2 line-clamp-2">{donor.bio}</p>
-
-                    <div className="flex items-center gap-3 mt-3 flex-wrap">
-                      <span className="font-body text-xs bg-sage-light text-sage rounded-full px-3 py-1.5">
-                        {donor.activity}
-                      </span>
-                      <button
-                        onClick={() => setExpanded(expanded === donor.id ? null : donor.id)}
-                        className="font-body text-xs text-muted-foreground hover:text-sage transition-colors flex items-center gap-1"
-                      >
-                        {expanded === donor.id ? "Скрыть" : "Подробнее"}
-                        <Icon name={expanded === donor.id ? "ChevronUp" : "ChevronDown"} size={12} />
-                      </button>
-                    </div>
-                  </div>
+                  {donor.rank <= 3 ? (
+                    <span className="absolute -top-2 -left-2 text-xl drop-shadow">{medals[donor.rank - 1]}</span>
+                  ) : (
+                    <span className="absolute -top-2 -left-2 w-6 h-6 bg-muted rounded-full flex items-center justify-center font-body text-xs text-muted-foreground font-semibold border border-border">
+                      {donor.rank}
+                    </span>
+                  )}
                 </div>
 
-                {/* Раскрытый блок */}
-                {expanded === donor.id && (
-                  <div className="px-6 md:px-8 pb-6 border-t border-border pt-5 bg-warm-cream">
-                    <p className="font-body text-sm text-muted-foreground leading-relaxed">{donor.bio}</p>
-                  </div>
-                )}
+                {/* Информация */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display text-xl text-deep-slate leading-tight">{donor.name}</h3>
+                  <p className="font-body text-xs text-sage mt-0.5">{donor.title}</p>
+                  {totalFund > 0 && (
+                    <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden max-w-xs">
+                      <div className="h-full bg-sage rounded-full" style={{ width: `${Math.min(100, (donor.totalDonated / totalFund) * 100)}%` }} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Сумма */}
+                <div className="text-right flex-shrink-0">
+                  <p className="font-display text-2xl text-deep-slate">{donor.totalDonated.toLocaleString("ru-RU")} ₽</p>
+                  <p className="font-body text-xs text-muted-foreground">{donor.donationsCount} {pluralDonations(donor.donationsCount)}</p>
+                </div>
               </div>
             ))}
           </div>
