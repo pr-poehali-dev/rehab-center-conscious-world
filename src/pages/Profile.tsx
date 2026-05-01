@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import BookingModal from "@/components/BookingModal";
 
 const PROFILE_URL = "https://functions.poehali.dev/4f103804-ef0e-4159-890e-6b42228de37d";
+const AUTH_URL = "https://functions.poehali.dev/787350a7-d77a-48bb-99f6-c77466ca7470";
 
 interface FavoriteSpecialist {
   specialistId: string;
@@ -30,7 +31,7 @@ interface ProfileData {
   bookings: unknown[];
 }
 
-type Tab = "favorites" | "donations";
+type Tab = "favorites" | "donations" | "security";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -41,6 +42,10 @@ export default function Profile() {
   const [editName, setEditName] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [savingName, setSavingName] = useState(false);
+  const [pwForm, setPwForm] = useState({ old: "", new: "", confirm: "" });
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
 
   const token = localStorage.getItem("auth_token");
   const email = localStorage.getItem("auth_email") || "";
@@ -91,9 +96,34 @@ export default function Profile() {
     navigate("/");
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError("");
+    if (pwForm.new !== pwForm.confirm) { setPwError("Пароли не совпадают"); return; }
+    if (pwForm.new.length < 6) { setPwError("Новый пароль должен быть не короче 6 символов"); return; }
+    setPwLoading(true);
+    try {
+      const res = await fetch(`${AUTH_URL}?action=change-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ oldPassword: pwForm.old, newPassword: pwForm.new }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPwSuccess(true);
+        setPwForm({ old: "", new: "", confirm: "" });
+        setTimeout(() => setPwSuccess(false), 3000);
+      } else {
+        setPwError(data.error || "Ошибка");
+      }
+    } catch { setPwError("Ошибка соединения"); }
+    finally { setPwLoading(false); }
+  };
+
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: "favorites", label: "Избранные специалисты", icon: "Heart" },
     { id: "donations", label: "История взносов", icon: "HandCoins" },
+    { id: "security", label: "Безопасность", icon: "Lock" },
   ];
 
   if (loading) {
@@ -258,6 +288,59 @@ export default function Profile() {
                     </p>
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+          {/* Безопасность */}
+          {activeTab === "security" && (
+            <div className="max-w-md">
+              <h3 className="font-display text-xl text-deep-slate mb-6">Смена пароля</h3>
+              {pwSuccess ? (
+                <div className="flex items-center gap-3 bg-sage-light border border-sage/20 rounded-2xl px-5 py-4">
+                  <Icon name="CheckCircle" size={18} className="text-sage flex-shrink-0" />
+                  <p className="font-body text-sm text-sage font-medium">Пароль успешно изменён</p>
+                </div>
+              ) : (
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div>
+                    <label className="font-body text-sm text-deep-slate block mb-1">Текущий пароль</label>
+                    <Input
+                      type="password"
+                      className="border-warm-tan focus:border-sage"
+                      placeholder="Введите текущий пароль"
+                      value={pwForm.old}
+                      onChange={e => setPwForm(f => ({ ...f, old: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="font-body text-sm text-deep-slate block mb-1">Новый пароль</label>
+                    <Input
+                      type="password"
+                      className="border-warm-tan focus:border-sage"
+                      placeholder="Минимум 6 символов"
+                      value={pwForm.new}
+                      onChange={e => setPwForm(f => ({ ...f, new: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="font-body text-sm text-deep-slate block mb-1">Повторите новый пароль</label>
+                    <Input
+                      type="password"
+                      className="border-warm-tan focus:border-sage"
+                      placeholder="Повторите пароль"
+                      value={pwForm.confirm}
+                      onChange={e => { setPwForm(f => ({ ...f, confirm: e.target.value })); setPwError(""); }}
+                    />
+                  </div>
+                  {pwError && <p className="text-sm text-destructive font-body">{pwError}</p>}
+                  <Button
+                    type="submit"
+                    disabled={pwLoading || !pwForm.old || !pwForm.new || !pwForm.confirm}
+                    className="bg-sage text-primary-foreground hover:opacity-90 font-body"
+                  >
+                    {pwLoading ? "Сохраняем..." : "Изменить пароль"}
+                  </Button>
+                </form>
               )}
             </div>
           )}

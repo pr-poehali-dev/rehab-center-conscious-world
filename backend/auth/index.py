@@ -10,7 +10,7 @@ SCHEMA = "t_p7834125_rehab_center_conscio"
 cors_headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Authorization",
 }
 
 
@@ -101,8 +101,52 @@ def handle_login(body: dict) -> dict:
     }
 
 
+def handle_change_password(event: dict, body: dict) -> dict:
+    """Смена пароля: требует токен сессии + {oldPassword, newPassword}"""
+    headers = event.get("headers") or {}
+    auth = headers.get("X-Authorization") or headers.get("x-authorization") or ""
+    token = auth.replace("Bearer ", "").strip()
+    if not token:
+        return {"statusCode": 401, "headers": cors_headers, "body": json.dumps({"error": "Необходима авторизация"})}
+
+    old_password = body.get("oldPassword", "")
+    new_password = body.get("newPassword", "")
+
+    if not old_password or not new_password:
+        return {"statusCode": 400, "headers": cors_headers, "body": json.dumps({"error": "Укажите старый и новый пароль"})}
+    if len(new_password) < 6:
+        return {"statusCode": 400, "headers": cors_headers, "body": json.dumps({"error": "Новый пароль должен быть не короче 6 символов"})}
+
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""SELECT u.id, u.password_hash FROM {SCHEMA}.sessions s
+                JOIN {SCHEMA}.users u ON u.id = s.user_id
+                WHERE s.token = %s AND s.expires_at > NOW()""",
+            (token,)
+        )
+        row = cur.fetchone()
+        if not row:
+            return {"statusCode": 401, "headers": cors_headers, "body": json.dumps({"error": "Сессия недействительна"})}
+
+        user_id, pw_hash = row
+        if pw_hash != hash_password(old_password):
+            return {"statusCode": 400, "headers": cors_headers, "body": json.dumps({"error": "Неверный текущий пароль"})}
+
+        cur.execute(
+            f"UPDATE {SCHEMA}.users SET password_hash = %s WHERE id = %s",
+            (hash_password(new_password), user_id)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    return {"statusCode": 200, "headers": cors_headers, "body": json.dumps({"success": True})}
+
+
 def handler(event: dict, context) -> dict:
-    """Авторизация: POST ?action=register {name, email, password} — регистрация, POST ?action=login {email, password} — вход"""
+    """Авторизация: POST ?action=register {name, email, password}, POST ?action=login {email, password}, POST ?action=change-password {oldPassword, newPassword} + X-Authorization"""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": cors_headers, "body": ""}
 
@@ -117,5 +161,7 @@ def handler(event: dict, context) -> dict:
         return handle_register(body)
     if action == "login":
         return handle_login(body)
+    if action == "change-password":
+        return handle_change_password(event, body)
 
     return {"statusCode": 400, "headers": cors_headers, "body": json.dumps({"error": "Unknown action"})}
