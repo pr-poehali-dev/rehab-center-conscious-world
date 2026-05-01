@@ -133,7 +133,7 @@ export default function SectionsTop({
             </h1>
             <p className="font-body text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg animate-fade-in-up delay-200">
               Система зананий и навыков позволяющая достичь своих целей в жизни.
-              "Мир" - в котором ты не один... "Место", где ты обретешь силу...
+              "Мир" - в котором ты не один... Место, где ты обретешь силу...
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-300">
               <Button
