@@ -12,7 +12,6 @@ const NAV_LINKS_BEFORE = [
 
 const NAV_LINKS_AFTER = [
   { label: "Отзывы", href: "#reviews" },
-  { label: "Фонд", href: "#fund" },
   { label: "Контакты", href: "#contacts" },
 ];
 
@@ -64,6 +63,12 @@ export default function Navbar({ onBooking }: NavbarProps) {
           >
             Блог
           </Link>
+          <Link
+            to="/fund"
+            className={`nav-link font-body text-sm transition-colors ${location.pathname === "/fund" ? "text-sage" : "text-muted-foreground hover:text-deep-slate"}`}
+          >
+            Фонд
+          </Link>
           {NAV_LINKS_AFTER.map(link => (
             <button
               key={link.href}
@@ -113,6 +118,13 @@ export default function Navbar({ onBooking }: NavbarProps) {
             className="text-left font-body text-sm text-deep-slate py-1"
           >
             Блог
+          </Link>
+          <Link
+            to="/fund"
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-left font-body text-sm text-deep-slate py-1"
+          >
+            Фонд
           </Link>
           {NAV_LINKS_AFTER.map(link => (
             <button

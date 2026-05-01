@@ -1,178 +1,8 @@
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
 import { BLOG_POSTS } from "@/data/blogPosts";
 import { SPECIALISTS } from "@/data/specialists";
-
-const FUND_URL = "https://functions.poehali.dev/af4da6ee-fdb2-4b38-a89a-74c8b892c4c2";
-
-interface FundDonor {
-  id: string;
-  name: string;
-  title: string;
-  bio: string;
-  activity: string;
-  photo: string;
-  totalDonated: number;
-  donationsCount: number;
-  rank: number;
-}
-
-function FundSection() {
-  const [donors, setDonors] = useState<FundDonor[]>([]);
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [donating, setDonating] = useState<{ id: string; amount: string } | null>(null);
-  const [donateStep, setDonateStep] = useState<"idle" | "loading" | "success">("idle");
-
-  const fetchDonors = async () => {
-    try {
-      const res = await fetch(FUND_URL);
-      const data = await res.json();
-      setDonors(data.donors || []);
-    } catch { /* silent */ }
-  };
-
-  useEffect(() => { fetchDonors(); }, []);
-
-  const handleDonate = async (donorId: string) => {
-    const amount = parseFloat(donating?.amount || "0");
-    if (!amount || amount <= 0) return;
-    setDonateStep("loading");
-    try {
-      await fetch(FUND_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ donorId, amount }),
-      });
-      setDonateStep("success");
-      fetchDonors();
-      setTimeout(() => { setDonating(null); setDonateStep("idle"); }, 2000);
-    } catch { setDonateStep("idle"); }
-  };
-
-  const medals = ["🥇", "🥈", "🥉"];
-
-  return (
-    <section id="fund" className="section-padding bg-deep-slate flower-of-life-bg">
-      <div className="container-max">
-        <div className="text-center mb-14">
-          <p className="font-body text-sage text-sm uppercase tracking-[0.2em] mb-3">Благотворительность</p>
-          <h2 className="font-display text-4xl md:text-5xl text-white leading-tight">Благотворительный фонд</h2>
-          <p className="font-body text-white/60 mt-4 max-w-xl mx-auto text-base">
-            Люди, которые делают помощь возможной. Рейтинг формируется по сумме внесённых пожертвований
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-1 gap-5 max-w-3xl mx-auto">
-          {donors.map((donor) => (
-            <div key={donor.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-sm">
-              <div className="flex items-start gap-5 p-6">
-                {/* Медаль + фото */}
-                <div className="relative flex-shrink-0">
-                  <img
-                    src={donor.photo}
-                    alt={donor.name}
-                    className="w-20 h-20 rounded-2xl object-cover object-top"
-                  />
-                  {donor.rank <= 3 && (
-                    <span className="absolute -top-2 -left-2 text-xl">{medals[donor.rank - 1]}</span>
-                  )}
-                  {donor.rank > 3 && (
-                    <span className="absolute -top-2 -left-2 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center font-body text-xs text-white font-bold">
-                      {donor.rank}
-                    </span>
-                  )}
-                </div>
-
-                {/* Инфо */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div>
-                      <h3 className="font-display text-xl text-white">{donor.name}</h3>
-                      <p className="font-body text-xs text-sage mt-0.5">{donor.title}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-display text-2xl text-white">
-                        {donor.totalDonated > 0
-                          ? donor.totalDonated.toLocaleString("ru-RU") + " ₽"
-                          : "—"}
-                      </p>
-                      {donor.donationsCount > 0 && (
-                        <p className="font-body text-xs text-white/40 mt-0.5">{donor.donationsCount} взнос{donor.donationsCount === 1 ? "" : donor.donationsCount < 5 ? "а" : "ов"}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="font-body text-sm text-white/60 mt-2 leading-relaxed line-clamp-2">{donor.bio}</p>
-
-                  <div className="flex items-center gap-3 mt-3 flex-wrap">
-                    <span className="font-body text-xs bg-sage/20 text-sage rounded-full px-3 py-1">{donor.activity}</span>
-                    <button
-                      onClick={() => setExpanded(expanded === donor.id ? null : donor.id)}
-                      className="font-body text-xs text-white/40 hover:text-white transition-colors"
-                    >
-                      {expanded === donor.id ? "Скрыть" : "Подробнее"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Раскрытый блок */}
-              {expanded === donor.id && (
-                <div className="px-6 pb-6 border-t border-white/10 pt-5">
-                  <p className="font-body text-sm text-white/70 leading-relaxed mb-4">{donor.bio}</p>
-
-                  {donating?.id === donor.id ? (
-                    donateStep === "success" ? (
-                      <div className="text-center py-3">
-                        <p className="font-body text-sage text-sm">Спасибо за поддержку! 🌿</p>
-                      </div>
-                    ) : (
-                      <div className="flex gap-3 items-center">
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="Сумма, ₽"
-                          value={donating.amount}
-                          onChange={e => setDonating({ id: donor.id, amount: e.target.value })}
-                          className="bg-white/10 border-white/20 text-white placeholder:text-white/30 max-w-[140px]"
-                        />
-                        <Button
-                          onClick={() => handleDonate(donor.id)}
-                          disabled={donateStep === "loading"}
-                          className="bg-sage text-white hover:opacity-90 font-body text-sm"
-                        >
-                          {donateStep === "loading" ? "..." : "Внести"}
-                        </Button>
-                        <button
-                          onClick={() => { setDonating(null); setDonateStep("idle"); }}
-                          className="font-body text-xs text-white/40 hover:text-white"
-                        >
-                          Отмена
-                        </button>
-                      </div>
-                    )
-                  ) : (
-                    <Button
-                      onClick={() => { setDonating({ id: donor.id, amount: "" }); setDonateStep("idle"); }}
-                      variant="outline"
-                      className="border-sage text-sage hover:bg-sage hover:text-white font-body text-sm"
-                    >
-                      <Icon name="Heart" size={14} className="mr-2" />
-                      Сделать взнос
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 const REVIEWS = [
   {
@@ -304,7 +134,30 @@ export default function SectionsBottom({ onBooking }: SectionsBottomProps) {
         </div>
       </section>
 
-      <FundSection />
+      {/* FUND PROMO */}
+      <section id="fund" className="section-padding bg-sage-light flower-of-life-bg">
+        <div className="container-max">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 bg-white rounded-3xl border border-border p-8 md:p-12">
+            <div className="flex items-start gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-sage-light flex items-center justify-center flex-shrink-0">
+                <Icon name="Heart" size={26} className="text-sage" />
+              </div>
+              <div>
+                <p className="font-body text-xs text-sage uppercase tracking-[0.2em] mb-1">Благотворительность</p>
+                <h2 className="font-display text-3xl md:text-4xl text-deep-slate mb-3">Благотворительный фонд</h2>
+                <p className="font-body text-muted-foreground leading-relaxed max-w-lg">
+                  Люди, которые верят в нашу миссию и делают помощь возможной. Рейтинг меценатов, биографии и возможность внести свой вклад.
+                </p>
+              </div>
+            </div>
+            <Link to="/fund" className="flex-shrink-0">
+              <Button className="bg-sage text-primary-foreground hover:opacity-90 font-body gap-2 px-8 py-3 text-base whitespace-nowrap">
+                Перейти в фонд <Icon name="ArrowRight" size={16} />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* CONTACTS */}
       <section id="contacts" className="section-padding bg-white flower-of-life-bg">
