@@ -1,0 +1,9 @@
+ALTER TABLE t_p7834125_rehab_center_conscio.users
+  ADD COLUMN IF NOT EXISTS phone VARCHAR(30),
+  ADD COLUMN IF NOT EXISTS birth_date DATE,
+  ADD COLUMN IF NOT EXISTS passport_series VARCHAR(10),
+  ADD COLUMN IF NOT EXISTS passport_number VARCHAR(20),
+  ADD COLUMN IF NOT EXISTS passport_issued_by TEXT,
+  ADD COLUMN IF NOT EXISTS passport_issued_date DATE,
+  ADD COLUMN IF NOT EXISTS address TEXT,
+  ADD COLUMN IF NOT EXISTS avatar_url TEXT;

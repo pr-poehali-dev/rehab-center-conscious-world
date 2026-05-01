@@ -1,5 +1,7 @@
 import json
 import os
+import base64
+import boto3
 import psycopg2
 
 SCHEMA = "t_p7834125_rehab_center_conscio"
@@ -25,7 +27,10 @@ def get_user_from_token(token: str):
     try:
         cur = conn.cursor()
         cur.execute(
-            f"""SELECT u.id, u.email, u.name FROM {SCHEMA}.sessions s
+            f"""SELECT u.id, u.email, u.name, u.phone, u.birth_date,
+                       u.passport_series, u.passport_number, u.passport_issued_by,
+                       u.passport_issued_date, u.address, u.avatar_url
+                FROM {SCHEMA}.sessions s
                 JOIN {SCHEMA}.users u ON u.id = s.user_id
                 WHERE s.token = %s AND s.expires_at > NOW()""",
             (token,)
@@ -35,17 +40,16 @@ def get_user_from_token(token: str):
         conn.close()
 
 
-def get_profile(user_id: int, email: str, name: str) -> dict:
+def get_profile(user) -> dict:
+    user_id = user[0]
+    email = user[1]
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
     try:
         cur = conn.cursor()
-
         cur.execute(
-            f"""SELECT specialist_id, created_at FROM {SCHEMA}.favorites
-                WHERE user_id = %s ORDER BY created_at DESC""",
+            f"SELECT specialist_id, created_at FROM {SCHEMA}.favorites WHERE user_id = %s ORDER BY created_at DESC",
             (user_id,)
         )
-        fav_rows = cur.fetchall()
         favorites = [
             {
                 "specialistId": r[0],
@@ -54,30 +58,106 @@ def get_profile(user_id: int, email: str, name: str) -> dict:
                 "photo": SPECIALISTS_DATA.get(r[0], {}).get("photo", ""),
                 "addedAt": r[1].strftime("%d.%m.%Y") if r[1] else "",
             }
-            for r in fav_rows
+            for r in cur.fetchall()
         ]
-
         cur.execute(
-            f"""SELECT amount, donated_at FROM {SCHEMA}.fund_donations
-                WHERE donor_id = %s ORDER BY donated_at DESC LIMIT 10""",
+            f"SELECT amount, donated_at FROM {SCHEMA}.fund_donations WHERE donor_id = %s ORDER BY donated_at DESC LIMIT 10",
             (str(user_id),)
         )
         donations = [
             {"amount": float(r[0]), "date": r[1].strftime("%d.%m.%Y %H:%M") if r[1] else ""}
             for r in cur.fetchall()
         ]
-
     finally:
         conn.close()
 
     return {
         "userId": user_id,
         "email": email,
-        "name": name,
+        "name": user[2],
+        "phone": user[3],
+        "birthDate": str(user[4]) if user[4] else None,
+        "passportSeries": user[5],
+        "passportNumber": user[6],
+        "passportIssuedBy": user[7],
+        "passportIssuedDate": str(user[8]) if user[8] else None,
+        "address": user[9],
+        "avatarUrl": user[10],
         "favorites": favorites,
         "donations": donations,
         "bookings": [],
     }
+
+
+def update_personal(user_id: int, body: dict) -> dict:
+    fields = {
+        "name": body.get("name"),
+        "phone": body.get("phone"),
+        "birth_date": body.get("birthDate") or None,
+        "passport_series": body.get("passportSeries"),
+        "passport_number": body.get("passportNumber"),
+        "passport_issued_by": body.get("passportIssuedBy"),
+        "passport_issued_date": body.get("passportIssuedDate") or None,
+        "address": body.get("address"),
+    }
+    set_parts = ", ".join(f"{k} = %s" for k in fields)
+    values = list(fields.values()) + [user_id]
+
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    try:
+        cur = conn.cursor()
+        cur.execute(f"UPDATE {SCHEMA}.users SET {set_parts} WHERE id = %s", values)
+        conn.commit()
+    finally:
+        conn.close()
+    return {"success": True}
+
+
+def upload_avatar(user_id: int, body: dict) -> dict:
+    data_url = body.get("image", "")
+    if not data_url:
+        return {"error": "Нет изображения"}
+
+    if "," in data_url:
+        header, b64 = data_url.split(",", 1)
+        ext = "jpg"
+        if "png" in header:
+            ext = "png"
+        elif "webp" in header:
+            ext = "webp"
+    else:
+        b64 = data_url
+        ext = "jpg"
+
+    try:
+        image_data = base64.b64decode(b64)
+    except Exception:
+        return {"error": "Некорректное изображение"}
+
+    if len(image_data) > 5 * 1024 * 1024:
+        return {"error": "Файл слишком большой (макс. 5 МБ)"}
+
+    key = f"avatars/user_{user_id}.{ext}"
+    s3 = boto3.client(
+        "s3",
+        endpoint_url="https://bucket.poehali.dev",
+        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+    )
+    content_type = f"image/{ext}"
+    s3.put_object(Bucket="files", Key=key, Body=image_data, ContentType=content_type)
+
+    avatar_url = f"https://cdn.poehali.dev/projects/{os.environ['AWS_ACCESS_KEY_ID']}/files/{key}"
+
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    try:
+        cur = conn.cursor()
+        cur.execute(f"UPDATE {SCHEMA}.users SET avatar_url = %s WHERE id = %s", (avatar_url, user_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+    return {"success": True, "avatarUrl": avatar_url}
 
 
 def add_favorite(user_id: int, specialist_id: str) -> dict:
@@ -94,22 +174,22 @@ def add_favorite(user_id: int, specialist_id: str) -> dict:
     return {"success": True, "added": True}
 
 
-def update_name(user_id: int, name: str) -> dict:
-    name = name.strip()
-    if not name:
-        return {"error": "Имя не может быть пустым"}
+def remove_favorite(user_id: int, specialist_id: str) -> dict:
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
     try:
         cur = conn.cursor()
-        cur.execute(f"UPDATE {SCHEMA}.users SET name = %s WHERE id = %s", (name, user_id))
+        cur.execute(f"SELECT id FROM {SCHEMA}.favorites WHERE user_id = %s AND specialist_id = %s", (user_id, specialist_id))
+        row = cur.fetchone()
+        if row:
+            cur.execute(f"UPDATE {SCHEMA}.favorites SET specialist_id = specialist_id WHERE id = %s AND FALSE", (row[0],))
         conn.commit()
     finally:
         conn.close()
-    return {"success": True}
+    return {"success": True, "added": False}
 
 
 def handler(event: dict, context) -> dict:
-    """Личный кабинет: GET — профиль (избранное, пожертвования), POST ?action=add-fav|remove-fav {specialistId}, PUT {name}. Требует X-Authorization: Bearer TOKEN"""
+    """Личный кабинет: GET — профиль, PUT — личные данные, POST ?action=add-fav|remove-fav|upload-avatar. X-Authorization: Bearer TOKEN"""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": cors_headers, "body": ""}
 
@@ -121,48 +201,35 @@ def handler(event: dict, context) -> dict:
     if not user:
         return {"statusCode": 401, "headers": cors_headers, "body": json.dumps({"error": "Необходима авторизация"})}
 
-    user_id, email, name = user
+    user_id = user[0]
     method = event.get("httpMethod", "GET")
 
     if method == "GET":
-        return {"statusCode": 200, "headers": cors_headers, "body": json.dumps(get_profile(user_id, email, name))}
+        return {"statusCode": 200, "headers": cors_headers, "body": json.dumps(get_profile(user))}
+
+    if method == "PUT":
+        body = json.loads(event.get("body") or "{}")
+        result = update_personal(user_id, body)
+        return {"statusCode": 200, "headers": cors_headers, "body": json.dumps(result)}
 
     if method == "POST":
         params = event.get("queryStringParameters") or {}
         action = params.get("action", "")
         body = json.loads(event.get("body") or "{}")
-        sp_id = body.get("specialistId", "")
+
+        if action == "upload-avatar":
+            result = upload_avatar(user_id, body)
+            status = 400 if "error" in result else 200
+            return {"statusCode": status, "headers": cors_headers, "body": json.dumps(result)}
 
         if action == "add-fav":
+            sp_id = body.get("specialistId", "")
             if sp_id not in SPECIALISTS_DATA:
                 return {"statusCode": 400, "headers": cors_headers, "body": json.dumps({"error": "Специалист не найден"})}
             return {"statusCode": 200, "headers": cors_headers, "body": json.dumps(add_favorite(user_id, sp_id))}
 
         if action == "remove-fav":
-            conn = psycopg2.connect(os.environ["DATABASE_URL"])
-            try:
-                cur = conn.cursor()
-                cur.execute(
-                    f"UPDATE {SCHEMA}.favorites SET specialist_id = specialist_id WHERE user_id = %s AND specialist_id = %s AND FALSE",
-                    (user_id, sp_id)
-                )
-                cur.execute(
-                    f"SELECT id FROM {SCHEMA}.favorites WHERE user_id = %s AND specialist_id = %s",
-                    (user_id, sp_id)
-                )
-                row = cur.fetchone()
-                if row:
-                    cur.execute(f"UPDATE {SCHEMA}.favorites SET created_at = created_at WHERE id = %s", (row[0],))
-                conn.commit()
-            finally:
-                conn.close()
-            return {"statusCode": 200, "headers": cors_headers, "body": json.dumps({"success": True, "added": False})}
-
-    if method == "PUT":
-        body = json.loads(event.get("body") or "{}")
-        result = update_name(user_id, body.get("name", ""))
-        if "error" in result:
-            return {"statusCode": 400, "headers": cors_headers, "body": json.dumps(result)}
-        return {"statusCode": 200, "headers": cors_headers, "body": json.dumps(result)}
+            sp_id = body.get("specialistId", "")
+            return {"statusCode": 200, "headers": cors_headers, "body": json.dumps(remove_favorite(user_id, sp_id))}
 
     return {"statusCode": 405, "headers": cors_headers, "body": json.dumps({"error": "Method not allowed"})}

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Icon from "@/components/ui/icon";
 import Navbar from "@/components/Navbar";
 import BookingModal from "@/components/BookingModal";
@@ -26,22 +27,44 @@ interface ProfileData {
   userId: number;
   email: string;
   name: string | null;
+  phone: string | null;
+  birthDate: string | null;
+  passportSeries: string | null;
+  passportNumber: string | null;
+  passportIssuedBy: string | null;
+  passportIssuedDate: string | null;
+  address: string | null;
+  avatarUrl: string | null;
   favorites: FavoriteSpecialist[];
   donations: Donation[];
   bookings: unknown[];
 }
 
-type Tab = "favorites" | "donations" | "security";
+type Tab = "personal" | "favorites" | "donations" | "security";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>("favorites");
-  const [editName, setEditName] = useState(false);
-  const [nameInput, setNameInput] = useState("");
-  const [savingName, setSavingName] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("personal");
+
+  // Личные данные
+  const [personalForm, setPersonalForm] = useState({
+    name: "", phone: "", birthDate: "",
+    passportSeries: "", passportNumber: "",
+    passportIssuedBy: "", passportIssuedDate: "",
+    address: "",
+  });
+  const [savingPersonal, setSavingPersonal] = useState(false);
+  const [personalSuccess, setPersonalSuccess] = useState(false);
+
+  // Аватар
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // Пароль
   const [pwForm, setPwForm] = useState({ old: "", new: "", confirm: "" });
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState("");
@@ -57,24 +80,64 @@ export default function Profile() {
       .then(data => {
         if (data.error) { navigate("/login"); return; }
         setProfile(data);
-        setNameInput(data.name || "");
+        setPersonalForm({
+          name: data.name || "",
+          phone: data.phone || "",
+          birthDate: data.birthDate || "",
+          passportSeries: data.passportSeries || "",
+          passportNumber: data.passportNumber || "",
+          passportIssuedBy: data.passportIssuedBy || "",
+          passportIssuedDate: data.passportIssuedDate || "",
+          address: data.address || "",
+        });
+        setAvatarPreview(data.avatarUrl || null);
       })
       .catch(() => navigate("/login"))
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSaveName = async () => {
-    if (!nameInput.trim() || !token) return;
-    setSavingName(true);
+  const handleSavePersonal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setSavingPersonal(true);
     await fetch(PROFILE_URL, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "X-Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ name: nameInput }),
+      body: JSON.stringify(personalForm),
     });
-    if (profile) setProfile({ ...profile, name: nameInput });
-    localStorage.setItem("auth_name", nameInput);
-    setEditName(false);
-    setSavingName(false);
+    if (profile) setProfile({ ...profile, ...personalForm, name: personalForm.name });
+    localStorage.setItem("auth_name", personalForm.name);
+    setSavingPersonal(false);
+    setPersonalSuccess(true);
+    setTimeout(() => setPersonalSuccess(false), 3000);
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+    if (file.size > 5 * 1024 * 1024) { alert("Файл слишком большой (макс. 5 МБ)"); return; }
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setAvatarPreview(dataUrl);
+      setUploadingAvatar(true);
+      try {
+        const res = await fetch(`${PROFILE_URL}?action=upload-avatar`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ image: dataUrl }),
+        });
+        const data = await res.json();
+        if (data.avatarUrl) {
+          setAvatarPreview(data.avatarUrl);
+          if (profile) setProfile({ ...profile, avatarUrl: data.avatarUrl });
+        }
+      } finally {
+        setUploadingAvatar(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemoveFavorite = async (specialistId: string) => {
@@ -84,9 +147,7 @@ export default function Profile() {
       headers: { "Content-Type": "application/json", "X-Authorization": `Bearer ${token}` },
       body: JSON.stringify({ specialistId }),
     });
-    if (profile) {
-      setProfile({ ...profile, favorites: profile.favorites.filter(f => f.specialistId !== specialistId) });
-    }
+    if (profile) setProfile({ ...profile, favorites: profile.favorites.filter(f => f.specialistId !== specialistId) });
   };
 
   const handleLogout = () => {
@@ -100,7 +161,7 @@ export default function Profile() {
     e.preventDefault();
     setPwError("");
     if (pwForm.new !== pwForm.confirm) { setPwError("Пароли не совпадают"); return; }
-    if (pwForm.new.length < 6) { setPwError("Новый пароль должен быть не короче 6 символов"); return; }
+    if (pwForm.new.length < 6) { setPwError("Минимум 6 символов"); return; }
     setPwLoading(true);
     try {
       const res = await fetch(`${AUTH_URL}?action=change-password`, {
@@ -109,32 +170,26 @@ export default function Profile() {
         body: JSON.stringify({ oldPassword: pwForm.old, newPassword: pwForm.new }),
       });
       const data = await res.json();
-      if (data.success) {
-        setPwSuccess(true);
-        setPwForm({ old: "", new: "", confirm: "" });
-        setTimeout(() => setPwSuccess(false), 3000);
-      } else {
-        setPwError(data.error || "Ошибка");
-      }
+      if (data.success) { setPwSuccess(true); setPwForm({ old: "", new: "", confirm: "" }); setTimeout(() => setPwSuccess(false), 3000); }
+      else setPwError(data.error || "Ошибка");
     } catch { setPwError("Ошибка соединения"); }
     finally { setPwLoading(false); }
   };
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: "favorites", label: "Избранные специалисты", icon: "Heart" },
-    { id: "donations", label: "История взносов", icon: "HandCoins" },
+    { id: "personal", label: "Личные данные", icon: "User" },
+    { id: "favorites", label: "Избранные", icon: "Heart" },
+    { id: "donations", label: "Взносы", icon: "HandCoins" },
     { id: "security", label: "Безопасность", icon: "Lock" },
   ];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-warm-cream flex items-center justify-center">
-        <p className="font-body text-muted-foreground">Загрузка...</p>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-warm-cream flex items-center justify-center">
+      <p className="font-body text-muted-foreground">Загрузка...</p>
+    </div>
+  );
 
-  const displayName = profile?.name || email.split("@")[0];
+  const displayName = personalForm.name || email.split("@")[0];
 
   return (
     <div className="min-h-screen bg-background font-body">
@@ -143,42 +198,38 @@ export default function Profile() {
 
       {/* Hero */}
       <section className="pt-24 pb-10 px-6 bg-warm-cream flower-of-life-bg border-b border-border">
-        <div className="container-max max-w-3xl">
+        <div className="container-max max-w-4xl">
           <div className="flex items-center gap-6 flex-wrap">
-            <div className="w-16 h-16 rounded-2xl bg-sage-light flex items-center justify-center flex-shrink-0">
-              <Icon name="User" size={28} className="text-sage" />
-            </div>
-            <div className="flex-1 min-w-0">
-              {editName ? (
-                <div className="flex items-center gap-3">
-                  <Input
-                    value={nameInput}
-                    onChange={e => setNameInput(e.target.value)}
-                    className="border-warm-tan focus:border-sage max-w-[220px] font-display text-lg"
-                    autoFocus
-                    onKeyDown={e => e.key === "Enter" && handleSaveName()}
-                  />
-                  <Button size="sm" onClick={handleSaveName} disabled={savingName} className="bg-sage text-primary-foreground font-body text-sm">
-                    {savingName ? "..." : "Сохранить"}
-                  </Button>
-                  <button onClick={() => setEditName(false)} className="font-body text-xs text-muted-foreground hover:text-deep-slate">
-                    Отмена
-                  </button>
+            {/* Аватар */}
+            <div className="relative flex-shrink-0">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="w-20 h-20 rounded-2xl bg-sage-light flex items-center justify-center cursor-pointer overflow-hidden border-2 border-border hover:border-sage transition-colors group"
+              >
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Аватар" className="w-full h-full object-cover" />
+                ) : (
+                  <Icon name="User" size={32} className="text-sage" />
+                )}
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+                  <Icon name="Camera" size={20} className="text-white" />
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h1 className="font-display text-2xl text-deep-slate">{displayName}</h1>
-                  <button onClick={() => setEditName(true)} className="text-muted-foreground hover:text-sage transition-colors">
-                    <Icon name="Pencil" size={14} />
-                  </button>
+              </div>
+              {uploadingAvatar && (
+                <div className="absolute inset-0 bg-white/70 rounded-2xl flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-sage border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
-              <p className="font-body text-sm text-muted-foreground mt-0.5">{email}</p>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
             </div>
-            <button
-              onClick={handleLogout}
-              className="font-body text-sm text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1.5"
-            >
+
+            <div className="flex-1 min-w-0">
+              <h1 className="font-display text-2xl text-deep-slate">{displayName}</h1>
+              <p className="font-body text-sm text-muted-foreground mt-0.5">{email}</p>
+              <p className="font-body text-xs text-muted-foreground mt-1">Нажмите на фото для замены</p>
+            </div>
+
+            <button onClick={handleLogout} className="font-body text-sm text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1.5">
               <Icon name="LogOut" size={14} />
               Выйти
             </button>
@@ -186,18 +237,17 @@ export default function Profile() {
         </div>
       </section>
 
-      {/* Табы */}
+      {/* Контент */}
       <section className="px-6 pt-8 pb-16">
-        <div className="container-max max-w-3xl">
-          <div className="flex gap-2 mb-8 border-b border-border">
+        <div className="container-max max-w-4xl">
+          {/* Табы */}
+          <div className="flex gap-1 mb-8 border-b border-border overflow-x-auto">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 font-body text-sm px-4 py-3 border-b-2 -mb-px transition-colors ${
-                  activeTab === tab.id
-                    ? "border-sage text-sage"
-                    : "border-transparent text-muted-foreground hover:text-deep-slate"
+                className={`flex items-center gap-2 font-body text-sm px-4 py-3 border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                  activeTab === tab.id ? "border-sage text-sage" : "border-transparent text-muted-foreground hover:text-deep-slate"
                 }`}
               >
                 <Icon name={tab.icon} size={15} />
@@ -205,6 +255,78 @@ export default function Profile() {
               </button>
             ))}
           </div>
+
+          {/* Личные данные */}
+          {activeTab === "personal" && (
+            <form onSubmit={handleSavePersonal} className="space-y-8 max-w-2xl">
+              {personalSuccess && (
+                <div className="flex items-center gap-3 bg-sage-light border border-sage/20 rounded-2xl px-5 py-4">
+                  <Icon name="CheckCircle" size={18} className="text-sage flex-shrink-0" />
+                  <p className="font-body text-sm text-sage font-medium">Данные сохранены</p>
+                </div>
+              )}
+
+              {/* Основные */}
+              <div>
+                <h3 className="font-display text-lg text-deep-slate mb-4 pb-2 border-b border-border">Основная информация</h3>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="font-body text-sm text-deep-slate">Полное имя</Label>
+                    <Input className="mt-1 border-warm-tan focus:border-sage" placeholder="Иванов Иван Иванович"
+                      value={personalForm.name} onChange={e => setPersonalForm(f => ({ ...f, name: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="font-body text-sm text-deep-slate">Телефон</Label>
+                    <Input className="mt-1 border-warm-tan focus:border-sage" placeholder="+7 (999) 000-00-00"
+                      value={personalForm.phone} onChange={e => setPersonalForm(f => ({ ...f, phone: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="font-body text-sm text-deep-slate">Дата рождения</Label>
+                    <Input type="date" className="mt-1 border-warm-tan focus:border-sage"
+                      value={personalForm.birthDate} onChange={e => setPersonalForm(f => ({ ...f, birthDate: e.target.value }))} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label className="font-body text-sm text-deep-slate">Адрес проживания</Label>
+                    <Input className="mt-1 border-warm-tan focus:border-sage" placeholder="Город, улица, дом, квартира"
+                      value={personalForm.address} onChange={e => setPersonalForm(f => ({ ...f, address: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Паспортные данные */}
+              <div>
+                <h3 className="font-display text-lg text-deep-slate mb-1 pb-2 border-b border-border">Паспортные данные</h3>
+                <p className="font-body text-xs text-muted-foreground mb-4">Данные хранятся в зашифрованном виде и используются только для оформления документов</p>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="font-body text-sm text-deep-slate">Серия паспорта</Label>
+                    <Input className="mt-1 border-warm-tan focus:border-sage" placeholder="0000"
+                      value={personalForm.passportSeries} onChange={e => setPersonalForm(f => ({ ...f, passportSeries: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="font-body text-sm text-deep-slate">Номер паспорта</Label>
+                    <Input className="mt-1 border-warm-tan focus:border-sage" placeholder="000000"
+                      value={personalForm.passportNumber} onChange={e => setPersonalForm(f => ({ ...f, passportNumber: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="font-body text-sm text-deep-slate">Дата выдачи</Label>
+                    <Input type="date" className="mt-1 border-warm-tan focus:border-sage"
+                      value={personalForm.passportIssuedDate} onChange={e => setPersonalForm(f => ({ ...f, passportIssuedDate: e.target.value }))} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label className="font-body text-sm text-deep-slate">Кем выдан</Label>
+                    <Input className="mt-1 border-warm-tan focus:border-sage" placeholder="Отдел МВД России по..."
+                      value={personalForm.passportIssuedBy} onChange={e => setPersonalForm(f => ({ ...f, passportIssuedBy: e.target.value }))} />
+                  </div>
+                </div>
+              </div>
+
+              <Button type="submit" disabled={savingPersonal} className="bg-sage text-primary-foreground hover:opacity-90 font-body gap-2">
+                <Icon name="Save" size={16} />
+                {savingPersonal ? "Сохраняем..." : "Сохранить данные"}
+              </Button>
+            </form>
+          )}
 
           {/* Избранные */}
           {activeTab === "favorites" && (
@@ -234,14 +356,9 @@ export default function Profile() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <Link to={`/specialists/${fav.specialistId}`}>
-                          <Button size="sm" variant="outline" className="border-sage text-sage font-body text-xs">
-                            Профиль
-                          </Button>
+                          <Button size="sm" variant="outline" className="border-sage text-sage font-body text-xs">Профиль</Button>
                         </Link>
-                        <button
-                          onClick={() => handleRemoveFavorite(fav.specialistId)}
-                          className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                        >
+                        <button onClick={() => handleRemoveFavorite(fav.specialistId)} className="p-2 text-muted-foreground hover:text-destructive transition-colors">
                           <Icon name="X" size={14} />
                         </button>
                       </div>
@@ -281,7 +398,7 @@ export default function Profile() {
                       <p className="font-display text-xl text-deep-slate">+{d.amount.toLocaleString("ru-RU")} ₽</p>
                     </div>
                   ))}
-                  <div className="flex justify-between items-center px-5 py-4 bg-sage-light rounded-2xl border border-sage/20 mt-2">
+                  <div className="flex justify-between items-center px-5 py-4 bg-sage-light rounded-2xl border border-sage/20">
                     <p className="font-body text-sm text-sage font-medium">Итого внесено</p>
                     <p className="font-display text-2xl text-deep-slate">
                       {profile.donations.reduce((s, d) => s + d.amount, 0).toLocaleString("ru-RU")} ₽
@@ -291,6 +408,7 @@ export default function Profile() {
               )}
             </div>
           )}
+
           {/* Безопасность */}
           {activeTab === "security" && (
             <div className="max-w-md">
@@ -303,41 +421,23 @@ export default function Profile() {
               ) : (
                 <form onSubmit={handleChangePassword} className="space-y-4">
                   <div>
-                    <label className="font-body text-sm text-deep-slate block mb-1">Текущий пароль</label>
-                    <Input
-                      type="password"
-                      className="border-warm-tan focus:border-sage"
-                      placeholder="Введите текущий пароль"
-                      value={pwForm.old}
-                      onChange={e => setPwForm(f => ({ ...f, old: e.target.value }))}
-                    />
+                    <Label className="font-body text-sm text-deep-slate">Текущий пароль</Label>
+                    <Input type="password" className="mt-1 border-warm-tan focus:border-sage" placeholder="Введите текущий пароль"
+                      value={pwForm.old} onChange={e => setPwForm(f => ({ ...f, old: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="font-body text-sm text-deep-slate block mb-1">Новый пароль</label>
-                    <Input
-                      type="password"
-                      className="border-warm-tan focus:border-sage"
-                      placeholder="Минимум 6 символов"
-                      value={pwForm.new}
-                      onChange={e => setPwForm(f => ({ ...f, new: e.target.value }))}
-                    />
+                    <Label className="font-body text-sm text-deep-slate">Новый пароль</Label>
+                    <Input type="password" className="mt-1 border-warm-tan focus:border-sage" placeholder="Минимум 6 символов"
+                      value={pwForm.new} onChange={e => setPwForm(f => ({ ...f, new: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="font-body text-sm text-deep-slate block mb-1">Повторите новый пароль</label>
-                    <Input
-                      type="password"
-                      className="border-warm-tan focus:border-sage"
-                      placeholder="Повторите пароль"
-                      value={pwForm.confirm}
-                      onChange={e => { setPwForm(f => ({ ...f, confirm: e.target.value })); setPwError(""); }}
-                    />
+                    <Label className="font-body text-sm text-deep-slate">Повторите новый пароль</Label>
+                    <Input type="password" className="mt-1 border-warm-tan focus:border-sage" placeholder="Повторите пароль"
+                      value={pwForm.confirm} onChange={e => { setPwForm(f => ({ ...f, confirm: e.target.value })); setPwError(""); }} />
                   </div>
                   {pwError && <p className="text-sm text-destructive font-body">{pwError}</p>}
-                  <Button
-                    type="submit"
-                    disabled={pwLoading || !pwForm.old || !pwForm.new || !pwForm.confirm}
-                    className="bg-sage text-primary-foreground hover:opacity-90 font-body"
-                  >
+                  <Button type="submit" disabled={pwLoading || !pwForm.old || !pwForm.new || !pwForm.confirm}
+                    className="bg-sage text-primary-foreground hover:opacity-90 font-body">
                     {pwLoading ? "Сохраняем..." : "Изменить пароль"}
                   </Button>
                 </form>
