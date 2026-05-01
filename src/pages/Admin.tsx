@@ -6,7 +6,7 @@ import Icon from "@/components/ui/icon";
 import FlowerOfLife from "@/components/FlowerOfLife";
 
 const GET_BOOKINGS_URL = "https://functions.poehali.dev/9821ab4f-4a9c-48fa-8647-754b1a9addf0";
-const ADMIN_PASSWORD = "osoznanie2024";
+const ADMIN_PASSWORD = "Inter56rus@";
 const SESSION_KEY = "admin_auth";
 
 interface Booking {
