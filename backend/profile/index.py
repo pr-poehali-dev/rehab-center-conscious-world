@@ -68,6 +68,32 @@ def get_profile(user) -> dict:
             {"amount": float(r[0]), "date": r[1].strftime("%d.%m.%Y %H:%M") if r[1] else ""}
             for r in cur.fetchall()
         ]
+
+        SERVICE_LABELS = {
+            "psychotherapy": "Психотерапия", "rehab": "Реабилитация",
+            "group": "Групповая терапия", "family": "Семейная терапия",
+            "art": "Арт-терапия", "other": "Хочу посоветоваться",
+        }
+        STATUS_LABELS = {"new": "Новая", "confirmed": "Подтверждена", "completed": "Завершена", "cancelled": "Отменена"}
+        cur.execute(
+            f"""SELECT id, service, preferred_date, client_city, comment, status, created_at
+                FROM {SCHEMA}.bookings
+                WHERE user_id = %s
+                ORDER BY created_at DESC LIMIT 20""",
+            (user_id,)
+        )
+        bookings = [
+            {
+                "id": r[0],
+                "service": SERVICE_LABELS.get(r[1], r[1]) if r[1] else "Консультация",
+                "date": str(r[2]) if r[2] else None,
+                "city": r[3] or "",
+                "comment": r[4] or "",
+                "status": STATUS_LABELS.get(r[5] or "new", "Новая"),
+                "createdAt": r[6].strftime("%d.%m.%Y") if r[6] else "",
+            }
+            for r in cur.fetchall()
+        ]
     finally:
         conn.close()
 
@@ -85,7 +111,7 @@ def get_profile(user) -> dict:
         "avatarUrl": user[10],
         "favorites": favorites,
         "donations": donations,
-        "bookings": [],
+        "bookings": bookings,
     }
 
 

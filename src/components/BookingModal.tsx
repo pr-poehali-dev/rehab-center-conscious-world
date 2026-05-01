@@ -50,9 +50,12 @@ export default function BookingModal({ open, onClose }: BookingModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const token = localStorage.getItem("auth_token");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers["X-Authorization"] = `Bearer ${token}`;
     await fetch(BOOKING_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         name: form.name,
         phone: form.phone,

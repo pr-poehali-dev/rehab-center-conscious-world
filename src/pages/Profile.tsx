@@ -37,10 +37,20 @@ interface ProfileData {
   avatarUrl: string | null;
   favorites: FavoriteSpecialist[];
   donations: Donation[];
-  bookings: unknown[];
+  bookings: Booking[];
 }
 
-type Tab = "personal" | "favorites" | "donations" | "security";
+interface Booking {
+  id: number;
+  service: string;
+  date: string | null;
+  city: string;
+  comment: string;
+  status: string;
+  createdAt: string;
+}
+
+type Tab = "personal" | "bookings" | "favorites" | "donations" | "security";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -178,6 +188,7 @@ export default function Profile() {
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: "personal", label: "Личные данные", icon: "User" },
+    { id: "bookings", label: "Мои записи", icon: "Calendar" },
     { id: "favorites", label: "Избранные", icon: "Heart" },
     { id: "donations", label: "Взносы", icon: "HandCoins" },
     { id: "security", label: "Безопасность", icon: "Lock" },
@@ -326,6 +337,65 @@ export default function Profile() {
                 {savingPersonal ? "Сохраняем..." : "Сохранить данные"}
               </Button>
             </form>
+          )}
+
+          {/* Мои записи */}
+          {activeTab === "bookings" && (
+            <div>
+              {!profile?.bookings.length ? (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Icon name="Calendar" size={24} className="text-muted-foreground" />
+                  </div>
+                  <p className="font-body text-muted-foreground mb-4">У вас пока нет записей на консультацию</p>
+                  <Button onClick={() => setBookingOpen(true)} className="bg-sage text-primary-foreground hover:opacity-90 font-body text-sm gap-2">
+                    <Icon name="Plus" size={14} />
+                    Записаться на консультацию
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {profile.bookings.map(b => {
+                    const statusColor: Record<string, string> = {
+                      "Новая": "bg-blue-50 text-blue-600 border-blue-100",
+                      "Подтверждена": "bg-sage-light text-sage border-sage/20",
+                      "Завершена": "bg-muted text-muted-foreground border-border",
+                      "Отменена": "bg-red-50 text-red-500 border-red-100",
+                    };
+                    return (
+                      <div key={b.id} className="bg-white rounded-2xl border border-border p-5">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div>
+                            <p className="font-display text-lg text-deep-slate">{b.service}</p>
+                            {b.date && (
+                              <p className="font-body text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                                <Icon name="Calendar" size={13} />
+                                {new Date(b.date).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
+                              </p>
+                            )}
+                            {b.city && (
+                              <p className="font-body text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                                <Icon name="MapPin" size={12} />
+                                {b.city}
+                              </p>
+                            )}
+                            {b.comment && (
+                              <p className="font-body text-xs text-muted-foreground mt-2 italic">«{b.comment}»</p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className={`font-body text-xs px-3 py-1 rounded-full border ${statusColor[b.status] || "bg-muted text-muted-foreground border-border"}`}>
+                              {b.status}
+                            </span>
+                            <p className="font-body text-xs text-muted-foreground">{b.createdAt}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Избранные */}

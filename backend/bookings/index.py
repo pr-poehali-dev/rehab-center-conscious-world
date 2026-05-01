@@ -16,8 +16,26 @@ SERVICE_LABELS = {
 cors_headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, X-Authorization",
 }
+
+
+def get_user_id_from_token(token: str):
+    if not token:
+        return None
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""SELECT u.id FROM {SCHEMA}.sessions s
+                JOIN {SCHEMA}.users u ON u.id = s.user_id
+                WHERE s.token = %s AND s.expires_at > NOW()""",
+            (token,)
+        )
+        row = cur.fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
 
 
 def handler(event: dict, context) -> dict:
@@ -57,6 +75,11 @@ def handler(event: dict, context) -> dict:
         return {"statusCode": 200, "headers": cors_headers, "body": json.dumps({"bookings": bookings, "total": len(bookings)})}
 
     if method == "POST":
+        headers = event.get("headers") or {}
+        auth = headers.get("X-Authorization") or headers.get("x-authorization") or ""
+        token = auth.replace("Bearer ", "").strip()
+        user_id = get_user_id_from_token(token)
+
         body = json.loads(event.get("body") or "{}")
         client_name = body.get("name", "").strip()
         client_phone = body.get("phone", "").strip()
@@ -73,9 +96,9 @@ def handler(event: dict, context) -> dict:
             cur = conn.cursor()
             cur.execute(
                 f"""INSERT INTO {SCHEMA}.bookings
-                    (client_name, client_phone, client_city, service, preferred_date, comment)
-                    VALUES (%s, %s, %s, %s, %s, %s) RETURNING id""",
-                (client_name, client_phone, client_city, service, preferred_date, comment)
+                    (client_name, client_phone, client_city, service, preferred_date, comment, user_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                (client_name, client_phone, client_city, service, preferred_date, comment, user_id)
             )
             booking_id = cur.fetchone()[0]
             conn.commit()
