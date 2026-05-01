@@ -191,49 +191,7 @@ export default function Fund() {
                 {/* Раскрытый блок */}
                 {expanded === donor.id && (
                   <div className="px-6 md:px-8 pb-6 border-t border-border pt-5 bg-warm-cream">
-                    <p className="font-body text-sm text-muted-foreground leading-relaxed mb-5">{donor.bio}</p>
-
-                    {donating?.id === donor.id ? (
-                      donateStep === "success" ? (
-                        <div className="flex items-center gap-2 text-sage">
-                          <Icon name="Heart" size={16} />
-                          <p className="font-body text-sm font-medium">Спасибо за поддержку! Взнос учтён в рейтинге.</p>
-                        </div>
-                      ) : (
-                        <div className="flex gap-3 items-center flex-wrap">
-                          <Input
-                            type="number"
-                            min="1"
-                            placeholder="Сумма, ₽"
-                            value={donating.amount}
-                            onChange={e => setDonating({ id: donor.id, amount: e.target.value })}
-                            className="border-warm-tan focus:border-sage max-w-[150px]"
-                          />
-                          <Button
-                            onClick={() => handleDonate(donor.id)}
-                            disabled={donateStep === "loading"}
-                            className="bg-sage text-primary-foreground hover:opacity-90 font-body text-sm"
-                          >
-                            {donateStep === "loading" ? "Сохраняем..." : "Внести взнос"}
-                          </Button>
-                          <button
-                            onClick={() => { setDonating(null); setDonateStep("idle"); }}
-                            className="font-body text-xs text-muted-foreground hover:text-deep-slate transition-colors"
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                      )
-                    ) : (
-                      <Button
-                        onClick={() => { setDonating({ id: donor.id, amount: "" }); setDonateStep("idle"); }}
-                        variant="outline"
-                        className="border-sage text-sage hover:bg-sage hover:text-primary-foreground font-body text-sm gap-2"
-                      >
-                        <Icon name="Heart" size={14} />
-                        Сделать взнос
-                      </Button>
-                    )}
+                    <p className="font-body text-sm text-muted-foreground leading-relaxed">{donor.bio}</p>
                   </div>
                 )}
               </div>
